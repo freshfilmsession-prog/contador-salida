@@ -1,0 +1,1263 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Hora de salida</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Inter:wght@300;400;600&display=swap">
+<style>
+:root{--bg:#0a0e1a;--bg2:#17203a;--tx:#f4efe4;--mut:#8d95ab;--gold:#d9b86c;--card:rgba(255,255,255,.05);--line:rgba(255,255,255,.12);--c:hsl(130 80% 52%);box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+:root[data-theme=light]{--bg:#f7f2e8;--bg2:#e6dcc6;--tx:#1b2033;--mut:#6a7086;--gold:#97701f;--card:rgba(0,0,0,.04);--line:rgba(0,0,0,.14)}
+@media(prefers-color-scheme:light){:root:not([data-theme=dark]){--bg:#f7f2e8;--bg2:#e6dcc6;--tx:#1b2033;--mut:#6a7086;--gold:#97701f;--card:rgba(0,0,0,.04);--line:rgba(0,0,0,.14)}}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 50% 0%,var(--bg2),var(--bg) 70%) fixed;color:var(--tx);font-family:Inter,system-ui,sans-serif;display:flex;flex-direction:column;align-items:center;padding:28px 18px 40px;gap:22px;overflow-x:hidden}
+.top{text-align:center}
+.now{font-family:'Cormorant Garamond',Georgia,serif;font-size:clamp(54px,14vw,92px);font-weight:500;letter-spacing:.04em;line-height:1;font-variant-numeric:tabular-nums}
+.now small{font-size:.36em;color:var(--gold);margin-left:6px}
+.date{margin-top:8px;color:var(--mut);font-size:13px;letter-spacing:.28em;text-transform:uppercase;font-weight:300}
+.ctl{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:8px 10px 8px 22px;backdrop-filter:blur(10px)}
+.ctl label{font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--mut)}
+.ctl input{background:transparent;border:1px solid var(--gold);border-radius:999px;color:var(--tx);font:600 20px Inter,sans-serif;padding:8px 16px;color-scheme:dark light;outline:none}
+.ring{position:relative;width:min(88vw,380px);aspect-ratio:1}
+.ring svg{width:100%;height:100%;overflow:visible}
+.tick{stroke:var(--line);stroke-width:1.5}.tick.big{stroke:var(--gold);stroke-width:2.2;opacity:.8}
+.trk{fill:none;stroke:var(--card);stroke-width:14}
+.prg{fill:none;stroke:var(--c);stroke-width:14;stroke-linecap:round;transform:rotate(-90deg);transform-origin:150px 150px;filter:drop-shadow(0 0 10px var(--c));transition:stroke .6s}
+.core{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+.lbl{font-size:11px;letter-spacing:.35em;text-transform:uppercase;color:var(--mut)}
+.cd{font-family:'Cormorant Garamond',Georgia,serif;font-size:clamp(44px,12vw,70px);font-weight:600;color:var(--c);font-variant-numeric:tabular-nums;line-height:1.1;text-shadow:0 0 28px var(--c);transition:color .6s}
+.pct{font-size:13px;color:var(--mut);margin-top:4px}
+.ring.pulse .prg,.ring.pulse .cd{animation:beat 1s ease-in-out infinite}
+.ring.pulse{animation:grow 1s ease-in-out infinite}
+@keyframes beat{50%{opacity:.55;filter:drop-shadow(0 0 26px var(--c))}}
+@keyframes grow{50%{transform:scale(1.035)}}
+.quote{max-width:560px;text-align:center;min-height:140px;padding:22px 26px;border:1px solid var(--line);border-radius:22px;background:var(--card);backdrop-filter:blur(10px);transition:opacity .8s,transform .8s;position:relative}
+.quote.out{opacity:0;transform:translateY(8px)}
+.quote:before{content:"“";position:absolute;top:-6px;left:50%;transform:translateX(-50%);font:96px/1 'Cormorant Garamond',serif;color:var(--gold);opacity:.35}
+#qt{font-family:'Cormorant Garamond',Georgia,serif;font-style:italic;font-size:clamp(21px,5.4vw,27px);line-height:1.35;margin-top:16px}
+#qa{margin-top:10px;color:var(--gold);font-size:12px;letter-spacing:.25em;text-transform:uppercase}
+.bar{height:2px;background:var(--line);border-radius:2px;margin-top:16px;overflow:hidden}.bar i{display:block;height:100%;width:0;background:var(--gold)}
+/* ===== CELEBRACIÓN FINAL ===== */
+#veil,#fl{position:fixed;inset:0;pointer-events:none;opacity:0}
+#veil{z-index:60;background:#000;transition:opacity .3s}#veil.on{opacity:.9}
+#fl{z-index:61;background:radial-gradient(circle,#fff,#ffe9a8 45%,transparent 80%)}
+#fl.go{animation:fl .9s ease-out}@keyframes fl{0%{opacity:1}100%{opacity:0}}
+.ring.zoom{z-index:62;animation:zin .7s cubic-bezier(.7,0,1,.5) forwards!important}
+@keyframes zin{0%{transform:scale(1)}70%{transform:scale(1.6);opacity:1}100%{transform:scale(2.6);opacity:0}}
+.top,.ctl,.quote,.ring,#demo{transition:opacity .5s}
+body.cel .top,body.cel .ctl,body.cel .quote,body.cel .ring,body.cel #demo{opacity:0;pointer-events:none}
+#cel{position:fixed;inset:0;z-index:55;display:none;overflow:hidden;background:#06010f;text-align:center;color:#fff}#cel.on{display:block}
+#cbg{position:absolute;inset:-25%;background:radial-gradient(circle at 20% 30%,#ff2e9355,transparent 40%),radial-gradient(circle at 80% 25%,#00e5ff55,transparent 40%),radial-gradient(circle at 50% 90%,#ffd84d55,transparent 45%),radial-gradient(circle at 85% 80%,#7b2cff66,transparent 40%);animation:bgm 12s ease-in-out infinite alternate,hue 9s linear infinite}
+@keyframes bgm{to{transform:rotate(30deg) scale(1.3)}}@keyframes hue{to{filter:hue-rotate(360deg)}}
+.beam{position:absolute;left:50%;bottom:0;width:170vmax;height:170vmax;margin:0 0 -85vmax -85vmax;background:conic-gradient(from -9deg,transparent,#ffffff40 9deg,transparent 18deg 360deg);mix-blend-mode:screen;animation:sw 5s ease-in-out infinite alternate}
+.beam.b2{background:conic-gradient(from -9deg,transparent,#00f0ff50 9deg,transparent 18deg 360deg);animation-duration:7s;animation-direction:alternate-reverse}
+@keyframes sw{from{transform:rotate(-40deg)}to{transform:rotate(40deg)}}
+.wave{position:absolute;left:50%;top:50%;width:30vmin;height:30vmin;margin:-15vmin;border-radius:50%;border:3px solid #fff;box-shadow:0 0 28px #0ff,inset 0 0 28px #f0f;opacity:0;animation:wv 2.7s ease-out infinite}
+.wave:nth-of-type(2){animation-delay:.9s}.wave:nth-of-type(3){animation-delay:1.8s}
+@keyframes wv{0%{transform:scale(.2);opacity:.9}100%{transform:scale(5.5);opacity:0}}
+#fx,#cf{position:absolute;inset:0;width:100%;height:100%}
+#box{position:absolute;inset:0;z-index:3;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2.2vmin;padding:20px;pointer-events:none}
+#ttl{margin:0;font:900 clamp(38px,10.5vw,120px)/1.04 Inter,system-ui,sans-serif;letter-spacing:.02em;text-shadow:0 0 6px #fff,0 0 22px #ff3df0,0 0 54px #00e5ff,0 0 100px #ffd84d;animation:slam 1.1s cubic-bezier(.2,1.5,.4,1) both,gl 2.2s ease-in-out 1.1s infinite alternate}
+@keyframes slam{from{transform:scale(5) rotate(-7deg);opacity:0;filter:blur(20px)}60%{filter:blur(0)}to{transform:none;opacity:1}}
+@keyframes gl{to{transform:scale(1.045);text-shadow:0 0 10px #fff,0 0 36px #ffd84d,0 0 80px #ff3df0,0 0 140px #00e5ff}}
+#sub{font:800 clamp(20px,5.2vw,46px) Inter,sans-serif;color:#ffe9a8;text-shadow:0 0 18px #ffb300,0 0 40px #ff3df0;animation:rise .9s cubic-bezier(.2,1.4,.4,1) .9s both}
+#ph{opacity:0;min-height:1.6em;font:600 clamp(16px,3.8vw,28px) Inter,sans-serif;color:#d8f6ff;text-shadow:0 0 14px #00e5ff}
+#ph.pop{animation:phx 3.2s both}
+@keyframes phx{0%{opacity:0;transform:translateY(14px)}10%,88%{opacity:1;transform:none}100%{opacity:0}}
+@keyframes rise{from{opacity:0;transform:translateY(40px) scale(.7)}to{opacity:1;transform:none}}
+#rst{pointer-events:auto;margin-top:3vmin;cursor:pointer;font:700 clamp(15px,3.6vw,20px) Inter,sans-serif;color:#fff;padding:14px 30px;border-radius:999px;border:1px solid #ffd84d;background:linear-gradient(135deg,#ffffff22,#ffffff08);backdrop-filter:blur(8px);box-shadow:0 0 24px #ffd84d66,inset 0 0 18px #ffffff1a;animation:rise 1s ease 3.2s both;transition:transform .2s,box-shadow .2s}
+#rst:hover{transform:scale(1.07);box-shadow:0 0 44px #ffd84d}
+.em{position:absolute;bottom:-70px;z-index:2;pointer-events:none;animation:up linear forwards}
+@keyframes up{to{transform:translateY(-120vh) rotate(40deg)}}
+#snd,#thm,#demo{font:600 12px Inter,sans-serif;color:var(--tx);background:var(--card);border:1px solid var(--line);border-radius:999px;padding:9px 16px;cursor:pointer;backdrop-filter:blur(10px)}
+.tools{position:fixed;z-index:70;top:calc(env(safe-area-inset-top,0px) + 12px);right:12px;display:flex;gap:8px}
+#demo{color:var(--mut);letter-spacing:.12em}
+#ach{position:fixed;z-index:66;left:50%;top:calc(env(safe-area-inset-top,0px) + 56px);transform:translate(-50%,-300%);transition:transform .7s cubic-bezier(.2,1.4,.4,1);display:flex;flex-direction:column;gap:3px;padding:12px 24px;border-radius:14px;background:#14102af0;border:1px solid #ffd84d;color:#fff;font:500 13px Inter,sans-serif;box-shadow:0 0 30px #ffd84d77}
+#ach b{color:#ffd84d;letter-spacing:.2em;font-size:11px}#ach.show{transform:translate(-50%,0)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:600px}
+.chips button{font:600 12px Inter,sans-serif;color:var(--mut);background:var(--card);border:1px solid var(--line);border-radius:999px;padding:8px 14px;cursor:pointer;transition:.25s;backdrop-filter:blur(10px)}
+.chips button.on{color:#1a1405;background:linear-gradient(135deg,#f3d88a,var(--gold));border-color:transparent;box-shadow:0 0 18px #d9b86c66}
+.stage{display:flex;flex-wrap:wrap;gap:26px;justify-content:center;align-items:center;width:100%}
+.ring.mile{animation:mile 1.3s ease-out 2!important}
+@keyframes mile{0%{transform:scale(1)}30%{transform:scale(1.12);filter:brightness(1.4) drop-shadow(0 0 40px var(--c))}100%{transform:scale(1);filter:none}}
+.ring.mile .cd{animation:cdp .65s ease-out 4}@keyframes cdp{40%{transform:scale(1.18)}}
+.rw{position:absolute;inset:0;border-radius:50%;border:3px solid var(--c);opacity:0;pointer-events:none}
+.ring.mile .rw{animation:rw 1.3s ease-out 2}.ring.mile .rw+.rw{animation-delay:.35s}
+@keyframes rw{from{transform:scale(.9);opacity:.9}to{transform:scale(1.5);opacity:0}}
+.ms{position:fixed;z-index:66;left:50%;top:calc(env(safe-area-inset-top,0px) + 58px);width:min(92vw,420px);transform:translate(-50%,-300%);transition:transform .7s cubic-bezier(.2,1.4,.4,1);display:flex;align-items:center;gap:14px;padding:14px 18px;border-radius:18px;background:var(--bg2);border:1px solid var(--c);color:var(--tx);box-shadow:0 0 34px var(--c)}
+.ms.show{transform:translate(-50%,0)}.ms>b{font-size:34px}
+.ms div b{display:block;font:800 17px Inter,sans-serif;color:var(--c)}.ms span{font:500 14px/1.35 Inter,sans-serif}
+body.cel .ms{opacity:0}
+.bu{position:fixed;z-index:65;font-size:26px;pointer-events:none;animation:bu 1.4s cubic-bezier(.1,.8,.3,1) forwards}
+@keyframes bu{from{transform:translate(-50%,-50%) scale(.3);opacity:1}to{transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy))) scale(1.2) rotate(40deg);opacity:0}}
+</style></head><body>
+<div class="top"><div class="now" id="now">--:--<small>--</small></div><div class="date" id="date"></div></div>
+<div class="ctl"><label for="out">Salgo a las</label><input type="time" id="out" value="17:00"></div>
+<div class="stage"><div class="ring" id="ring">
+<svg viewBox="0 0 300 300"><g id="ticks"></g><circle class="trk" cx="150" cy="150" r="130"/><circle class="prg" id="prg" cx="150" cy="150" r="130" stroke-dasharray="816.8" stroke-dashoffset="0"/></svg>
+<i class="rw"></i><i class="rw"></i><div class="core"><div class="lbl" id="lbl">Para la salida</div><div class="cd" id="cd">00:00:00</div><div class="pct" id="pct"></div></div></div>
+</div>
+<div class="chips" id="chips"></div>
+<div class="quote" id="q"><div id="qt"></div><div id="qa"></div><div class="bar"><i id="qb"></i></div></div>
+<button id="demo">▶ PROBAR CELEBRACIÓN</button>
+<div class="ms" id="ms"><b id="mi"></b><div><b id="mt"></b><span id="mm"></span></div></div>
+<div class="tools"><button id="thm">☀️ Claro</button><button id="snd">🔊 Sonido ON</button></div>
+<div id="veil"></div><div id="fl"></div>
+<div id="ach"><b>🏆 LOGRO DESBLOQUEADO</b><span>Superviviente del almacén · +1000 XP</span></div>
+<div id="cel"><div id="cbg"></div><div class="beam"></div><div class="beam b2"></div><i class="wave"></i><i class="wave"></i><i class="wave"></i><canvas id="fx"></canvas><canvas id="cf"></canvas>
+<div id="box"><h1 id="ttl">🎉 LIBERTAD CONSEGUIDA 🎉</h1><div id="sub"></div><div id="ph"></div><button id="rst">↺ Volver al contador</button></div></div>
+<script>
+const Q=`El único modo de hacer un gran trabajo es amar lo que haces — Steve Jobs
+La vida es lo que pasa mientras estás ocupado haciendo otros planes — John Lennon
+Todo parece imposible hasta que se hace — Nelson Mandela
+No cuentes los días, haz que los días cuenten — Muhammad Ali
+Caer está permitido, levantarse es obligatorio — Proverbio ruso
+La mejor manera de predecir el futuro es crearlo — Peter Drucker
+Haz de cada día tu obra maestra — John Wooden
+Cree que puedes y ya estás a medio camino — Theodore Roosevelt
+El éxito consiste en sobreponerse al fracaso una y otra vez — Winston Churchill
+Quien tiene un porqué para vivir encuentra casi siempre el cómo — Nietzsche
+Somos lo que hacemos repetidamente; la excelencia es un hábito — Will Durant
+La imaginación es más importante que el conocimiento — Albert Einstein
+El que tiene paciencia obtiene lo que desea — Benjamin Franklin
+Un viaje de mil millas comienza con un solo paso — Lao Tse
+Lo que hagas hoy puede mejorar todos tus mañanas — Ralph Marston
+Nunca es tarde para ser lo que podrías haber sido — George Eliot
+La acción es la clave fundamental de todo éxito — Pablo Picasso
+Querer es poder — Proverbio
+El talento gana partidos, pero el trabajo en equipo gana campeonatos — Michael Jordan
+No hay atajos para ningún lugar al que valga la pena ir — Beverly Sills
+Hacer lo que amas es la libertad; amar lo que haces es la felicidad — Proverbio
+La disciplina es el puente entre las metas y los logros — Jim Rohn
+Si puedes soñarlo, puedes hacerlo — Walt Disney
+Empieza donde estás, usa lo que tienes, haz lo que puedas — Arthur Ashe
+La mejor venganza es un éxito enorme — Frank Sinatra
+Hoy es un buen día para ser imparable.
+Un día más, una victoria más.
+Lo estás haciendo mejor de lo que crees.
+Cada minuto te acerca a tu merecido descanso.
+Tu esfuerzo de hoy es tu orgullo de mañana.
+Respira hondo: lo difícil ya pasó.
+Descansar también es avanzar.
+El esfuerzo silencioso hace el mayor ruido.
+Lo bueno se hace esperar, y tú ya casi llegas.
+La constancia vence al talento cuando el talento no es constante.
+Pequeños pasos, grandes resultados.
+Tú eres el motor de tu propio día.
+Hoy sumaste, y eso es lo que importa.
+Tu trabajo importa más de lo que imaginas.
+La calma también es una forma de potencia.
+Cada tarea terminada es una batalla ganada.
+Sonríe: ya queda menos.
+Hazlo con ganas o no lo hagas a medias.
+El mejor momento para empezar fue ayer; el segundo mejor es ahora.
+Que el cansancio no te robe el orgullo de lo conseguido.
+No tienes que ser perfecto, solo constante.
+Lo que hoy cuesta, mañana se agradece.
+La energía positiva es contagiosa; contagia.
+Tu actitud decide la altura de tu día.
+Ser amable también es productivo.
+Un buen equipo empieza por una buena persona: tú.
+Las metas pequeñas construyen vidas grandes.
+Hoy aprendiste algo, aunque no lo notes.
+Cada error es una lección con disfraz.
+Trabaja con calma, termina con orgullo.
+La paciencia es amarga, pero su fruto es dulce.
+Hazlo fácil: una cosa cada vez.
+Estás más cerca de tu meta que ayer.
+No te compares: compite contigo mismo.
+Tu mejor versión se construye con pequeños hábitos.
+Quien persevera, alcanza.
+El éxito es la suma de pequeños esfuerzos repetidos cada día.
+Cuando todo parezca cuesta arriba, recuerda que la vista desde arriba merece la pena.
+Hoy cierras tareas, mañana abres oportunidades.
+Un profesional no espera inspiración: la fabrica.
+Detrás de cada hora tranquila hubo un trabajo bien hecho.
+Que tu ritmo sea firme, no frenético.
+Lo importante no es correr, es no detenerse.
+Tienes más fuerza de la que tu cansancio te deja ver.
+Cada día es una página nueva; escríbela bien.
+Tu futuro agradece lo que haces hoy.
+Mantén la cabeza fría y el corazón valiente.
+Si te cansas, aprende a descansar, no a rendirte.
+Los grandes logros nacen de días normales bien aprovechados.
+Estás construyendo algo; sigue colocando ladrillos.
+Un poco de orden hoy es mucha paz mañana.
+Haz que tu trabajo hable por ti.
+Disfruta el proceso, el resultado llegará.
+La excelencia no es un acto, es una costumbre.
+Sé la razón por la que alguien sonríe hoy.
+Ya queda menos para tu libertad de la tarde.
+El tiempo bien usado es la mejor inversión.
+Confía en tu preparación.
+No esperes el momento perfecto: crea el momento.
+Quien se levanta una vez más que las que cae, gana.
+Enfócate en lo que sí puedes controlar.
+Un respiro profundo puede cambiar toda una tarde.
+La motivación te arranca; el hábito te mantiene.
+Haz hoy lo que otros no quieren y vivirás mañana como otros no pueden.
+Tu valor no depende de lo rápido que vayas.
+Hazlo con pasión o no lo hagas.
+Todo gran camino se recorre de a poco.
+Cuida tu energía: es tu recurso más valioso.
+Las dificultades preparan a gente común para destinos extraordinarios.
+Sigue; incluso la noche más larga termina en amanecer.
+Convierte el "tengo que" en "quiero".
+La mejor inversión es la que haces en ti.
+Los obstáculos son oportunidades con casco.
+Cada hora cuenta, y tú la estás aprovechando.
+Eres capaz de más de lo que piensas.
+El orden en el trabajo trae paz en la cabeza.
+Trabajar con propósito cambia el cansancio por satisfacción.
+Hoy resuelves lo que ayer parecía imposible.
+Recuerda por qué empezaste.
+Un equipo fuerte se apoya en personas como tú.
+La alegría de terminar vale más que la pereza de empezar.
+Tu esfuerzo no pasa desapercibido.
+Las grandes cosas nunca vienen de zonas cómodas.
+Sé tan bueno que no puedan ignorarte.
+Tu tranquilidad es tu superpoder.
+Hay victorias que solo tú sabes que has ganado.
+Lo mejor del día todavía puede estar por llegar.
+Las tardes buenas se ganan con mañanas buenas.
+Cuando termines, mírate con orgullo.
+Haz una pausa, estírate, sonríe y continúa.
+Hoy no es un día más: es un día tuyo.
+Tu paciencia es tu arma secreta.
+Un pensamiento positivo cada hora mantiene lejos el estrés.
+Lo que siembras con esfuerzo, lo cosechas con orgullo.
+No hay mal que dure cien años, ni jornada que no acabe.
+Avanza, aunque sea despacio; lo importante es la dirección.
+Termina fuerte lo que empezaste con ganas.
+Ser constante es la forma más silenciosa de ser valiente.
+Un buen día se construye minuto a minuto.
+Eres el protagonista de tu propia historia laboral.
+Un corazón tranquilo trabaja mejor.
+Quien da lo mejor de sí no tiene nada que lamentar.
+Cada logro empieza con la decisión de intentarlo.
+Tu dedicación inspira más de lo que crees.
+Aprender es la mejor forma de avanzar.
+Si fuera fácil, todos lo harían; tú sí puedes.
+Gracias por darlo todo hoy.
+La suerte es lo que ocurre cuando la preparación se encuentra con la oportunidad.
+Los límites los pones tú; también puedes moverlos.
+Mira cuánto has avanzado, no cuánto te falta.
+Haz lo que tengas que hacer para poder hacer lo que quieras.
+Mañana te dará las gracias el que hoy se esfuerza.
+Tu energía atrae tus resultados.
+Hay fuerza en la rutina bien vivida.
+Cada pequeño avance suma a lo grande.
+Lo único imposible es lo que no intentas.
+Con ganas y constancia, todo sale.
+Trabaja en silencio y deja que el éxito haga ruido.
+El trabajo duro vence al talento perezoso.
+Nadie alcanza la cima sin dar el primer paso.
+Aprende de ayer, vive hoy, espera con ilusión el mañana.
+Que nada te quite la paz de un trabajo bien hecho.
+Tu mejor trabajo siempre está por venir.
+Si algo merece la pena, merece tu esfuerzo.
+Un minuto de calma vale más que una hora de prisa.
+Haz del esfuerzo tu costumbre y del éxito tu consecuencia.
+La vida premia a los que se atreven.
+La constancia convierte lo ordinario en extraordinario.
+La valentía no es no tener miedo, es avanzar con él.
+Cree en el proceso.
+Sé amable contigo: estás haciendo lo que puedes.
+Tu actitud es el 90% de tu jornada.
+La felicidad es hacer bien lo que toca.
+Donde hay voluntad, hay camino.
+La grandeza se construye en los días grises.
+Nunca subestimes el poder de una buena actitud.
+Trabaja como si cada detalle importara; importa.
+Dale a cada hora tu mejor versión.
+Cierra el día con la satisfacción del deber cumplido.
+Saber esperar es una forma de sabiduría.
+El mejor impulso es el que nace de dentro.
+Las metas se alcanzan con acción, no con deseos.
+Un día productivo es un día bien vivido.
+Haz que cada minuto sea una pequeña victoria.
+Lo estás consiguiendo, sigue.
+No te rindas: lo mejor suele estar tras el último esfuerzo.
+Las cosas grandes se logran con pequeñas decisiones diarias.
+Piensa en positivo y trabaja en consecuencia.
+Confía: tu esfuerzo tiene sentido.
+Cada final de jornada es un pequeño renacer.
+Al terminar, desconecta de verdad: te lo has ganado.
+Un buen descanso es el mejor aliado del buen trabajo.
+Estás a un paso de volver a lo que más quieres.
+Orgullo es mirar atrás y ver todo lo que has hecho.
+Pon corazón en lo que haces y se notará.
+Hoy fuiste una pieza clave.
+Tus ganas valen más que cualquier excusa.
+Mantén el rumbo; la costa está cerca.
+Hay días que se ganan solo con no abandonar.
+Un día más construyendo el futuro que mereces.
+La rutina bien llevada es la base de los grandes sueños.
+El tiempo vuela cuando haces lo que hay que hacer.
+Haz que tu esfuerzo de hoy sea el orgullo de tu casa.
+Lo difícil lleva un poco más de tiempo; lo imposible, un poco más.
+Trabaja con alma y la jornada se hará ligera.
+Termina el día con gratitud.
+Eres más fuerte que cualquier lunes.
+Tu constancia es tu sello personal.
+A punto de cerrar el día con la cabeza bien alta.`.split("\n").map(l=>{const i=l.lastIndexOf(" — ");return i>0?[l.slice(0,i),l.slice(i+3)]:[l,""]});
+const $=id=>document.getElementById(id),p2=n=>String(n).padStart(2,"0"),C=816.8;
+let tg="17:00",st=Date.now(),bag=[];
+try{const s=JSON.parse(localStorage.getItem("salida")||"null");if(s){tg=s.t;if(new Date(s.s).toDateString()==new Date().toDateString())st=s.s}}catch(e){}
+$("out").value=tg;
+$("out").onchange=e=>{tg=e.target.value||tg;st=Date.now();try{localStorage.setItem("salida",JSON.stringify({t:tg,s:st}))}catch(x){}};
+let tk="";for(let i=0;i<60;i++){const a=i*6*Math.PI/180,b=i%5==0,r1=b?152:155,r2=b?164:160;tk+=`<line class="tick${b?" big":""}" x1="${150+r1*Math.sin(a)}" y1="${150-r1*Math.cos(a)}" x2="${150+r2*Math.sin(a)}" y2="${150-r2*Math.cos(a)}"/>`}
+$("ticks").innerHTML=tk;
+function tick(){
+ const n=new Date(),h=n.getHours();
+ $("now").innerHTML=`${p2(h%12||12)}:${p2(n.getMinutes())}:${p2(n.getSeconds())}<small>${h<12?"AM":"PM"}</small>`;
+ $("date").textContent=n.toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"long"});
+ const[H,M]=tg.split(":").map(Number),t=new Date(n);t.setHours(H,M,0,0);
+ const rem=t-n;watch(rem);const tot=Math.max(t-st,1),e=Math.min(Math.max((n-st)/tot,0),1);
+ const col=`hsl(${Math.round(130*(1-e))} 82% ${50+4*e}%)`;
+ document.documentElement.style.setProperty("--c",col);
+ $("prg").style.strokeDashoffset=C*e;
+ const r=$("ring");
+ if(rem<=0){$("cd").textContent="¡Hora!";$("lbl").textContent="Es hora de salir";$("pct").textContent="Disfruta tu tarde ✨";$("prg").style.strokeDashoffset=C;r.classList.add("pulse");document.documentElement.style.setProperty("--c","hsl(0 85% 54%)")}
+ else{const s=Math.ceil(rem/1000);$("cd").textContent=`${p2(Math.floor(s/3600))}:${p2(Math.floor(s%3600/60))}:${p2(s%60)}`;$("lbl").textContent="Para la salida";$("pct").textContent=`${Math.round(e*100)}% de la jornada completado`;r.classList.toggle("pulse",rem<=600000||e>=.92)}
+}
+let qi=0;
+function showQ(){
+ if(!bag.length){bag=cur.map((_,i)=>i).filter(i=>!GS_.has(cur[i])||Math.random()<.25);for(let i=bag.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[bag[i],bag[j]]=[bag[j],bag[i]]}}
+ const [t,a]=cur[bag.pop()],q=$("q");q.classList.add("out");
+ setTimeout(()=>{$("qt").textContent=t;$("qa").textContent=a?"— "+a:"";q.classList.remove("out");const b=$("qb");b.style.transition="none";b.style.width="0";requestAnimationFrame(()=>requestAnimationFrame(()=>{b.style.transition="width 30s linear";b.style.width="100%"}))},qi++?800:0);
+}
+/* ===== CATEGORÍAS DE FRASES ===== */
+const P_=s=>s.trim().split("\n").map(l=>{const i=l.lastIndexOf(" — ");return i>0?[l.slice(0,i),l.slice(i+3)]:[l,""]});
+const CEL=`Solo sé que no sé nada — Sócrates
+No es que tengamos poco tiempo, sino que perdemos mucho — Séneca
+Tienes poder sobre tu mente, no sobre los acontecimientos — Marco Aurelio
+La vida es como andar en bicicleta: para mantener el equilibrio hay que seguir avanzando — Albert Einstein
+En medio de la dificultad reside la oportunidad — Albert Einstein
+El éxito no es definitivo ni el fracaso fatal: lo que cuenta es el valor para continuar — Winston Churchill
+El secreto para salir adelante es comenzar — Mark Twain
+Dentro de veinte años lamentarás más lo que no hiciste que lo que hiciste — Mark Twain
+Todos nuestros sueños pueden hacerse realidad si tenemos el coraje de perseguirlos — Walt Disney
+Si crees que puedes o crees que no puedes, tienes razón — Henry Ford
+No fracasé: descubrí diez mil maneras que no funcionan — Thomas Edison
+El genio es un uno por ciento de inspiración y un noventa y nueve de transpiración — Thomas Edison
+El futuro pertenece a quienes creen en la belleza de sus sueños — Eleanor Roosevelt
+Si no te gusta algo, cámbialo; si no puedes, cambia tu actitud — Maya Angelou
+La libertad es uno de los más preciosos dones que dieron los cielos a los hombres — Miguel de Cervantes
+El que lee mucho y anda mucho, ve mucho y sabe mucho — Miguel de Cervantes
+Podrán cortar todas las flores, pero no detendrán la primavera — Pablo Neruda
+Pies, ¿para qué los quiero si tengo alas para volar? — Frida Kahlo
+No temo al que ha practicado diez mil patadas una vez, sino al que ha practicado una patada diez mil veces — Bruce Lee
+Sé tú mismo; los demás puestos ya están ocupados — Oscar Wilde
+He fallado una y otra vez en mi vida, y por eso tengo éxito — Michael Jordan
+Sufre ahora y vive el resto de tu vida como un campeón — Muhammad Ali
+Quien conoce a los demás es sabio; quien se conoce a sí mismo es iluminado — Lao Tse
+Solo hay dos días en el año en que no se puede hacer nada: ayer y mañana — Dalai Lama
+Un día sin sonreír es un día perdido — Charles Chaplin
+Solos podemos hacer tan poco; juntos podemos hacer tanto — Helen Keller
+Lo importante no son los años de tu vida, sino la vida de tus años — Abraham Lincoln
+Mantente hambriento, mantente alocado — Steve Jobs
+En lo más profundo del invierno aprendí que dentro de mí había un verano invencible — Albert Camus
+En medio del caos también hay oportunidad — Sun Tzu
+La vida no es la que uno vivió, sino la que uno recuerda — Gabriel García Márquez
+El trabajo aleja de nosotros tres grandes males: el aburrimiento, el vicio y la necesidad — Voltaire
+Dime y lo olvido, enséñame y lo recuerdo, involúcrame y lo aprendo — Benjamin Franklin
+La simplicidad es la sofisticación suprema — Leonardo da Vinci
+Nuestra mayor gloria no es no caer nunca, sino levantarnos cada vez — Confucio
+Aprender sin pensar es inútil; pensar sin aprender, peligroso — Confucio
+Sé el cambio que quieres ver en el mundo — Mahatma Gandhi
+Por difícil que parezca la vida, siempre hay algo que puedes hacer y en lo que puedes tener éxito — Stephen Hawking
+Haz lo que puedas, con lo que tengas, donde estés — Theodore Roosevelt
+La mejor forma de empezar es dejar de hablar y empezar a hacer — Walt Disney`,
+MOT=`La mejor jornada es la que termina con una sonrisa.
+Si hoy pudiste, mañana podrás aún más.
+Da igual la velocidad: lo que cuenta es que avanzas.
+El cansancio pasa, el orgullo se queda.
+Ya has hecho lo más difícil: aparecer y esforzarte.
+Cada vez que cumples, te fortaleces.
+Tu futuro se construye con lo que haces cuando nadie mira.
+Haz de tu esfuerzo una costumbre y de la excelencia, tu sello.
+Nada grande empezó siendo cómodo.
+Cuida tus pensamientos: ellos dirigen tus actos.
+No esperes motivación: crea el hábito.
+Tu mejor jugada es no rendirte.
+Lo que hoy te cuesta será mañana tu fortaleza.
+Rodéate de buena gente y trabaja con buen humor.
+Una buena actitud transforma cualquier jornada.
+Tu paciencia de hoy es tu éxito de mañana.
+Los grandes cambios empiezan por pequeñas decisiones.
+Mantén el foco: el final está cerca.
+Brilla sin pedir permiso.
+No pares hasta sentirte orgulloso.
+Cada final es un nuevo comienzo.
+Respira, sonríe y sigue sumando.`,
+CHI=`La gota horada la piedra no por su fuerza, sino por su constancia — Proverbio chino
+Quien mueve montañas empieza apartando piedras pequeñas — Proverbio chino
+El mejor momento para plantar un árbol fue hace veinte años; el segundo mejor, hoy — Proverbio chino
+No temas avanzar despacio; teme quedarte quieto — Proverbio chino
+Quien pregunta es tonto cinco minutos; quien no pregunta, toda la vida — Proverbio chino
+Mejor encender una vela que maldecir la oscuridad — Proverbio chino
+El bambú que se dobla es más fuerte que el roble que resiste — Proverbio chino
+Cuando sopla el viento del cambio, unos levantan muros y otros molinos — Proverbio chino
+Una sola chispa puede incendiar la pradera — Proverbio chino
+La paciencia convierte la hoja de morera en seda — Proverbio chino
+Si quieres un año de prosperidad, cultiva grano; si quieres cien, educa personas — Proverbio chino
+El agua blanda vence a la roca dura — Proverbio chino
+Tras la tormenta sale el sol — Proverbio chino
+Hasta el árbol más alto nació de una semilla — Proverbio chino
+La suerte llega a quien la prepara — Proverbio chino
+Escucha mucho, habla poco y verás mucho — Proverbio chino
+Un sabio cambia de opinión; un necio, nunca — Proverbio chino
+Cuando comas el fruto, recuerda quién plantó el árbol — Proverbio chino
+Tres cosas no vuelven: la palabra dicha, la flecha lanzada y el tiempo pasado — Proverbio chino
+La oportunidad llama una vez: abre la puerta — Proverbio chino
+Quien siembra con paciencia cosecha con alegría — Proverbio chino
+El río no vuelve a su fuente: aprovecha cada instante — Proverbio chino
+Un amigo es un tesoro que no se pesa en oro — Proverbio chino
+Cada día es un nuevo comienzo — Proverbio chino
+El sabio no se queja de la montaña: la sube — Proverbio chino
+Si el viento no sopla, rema — Proverbio chino
+Quien llega a la cima es quien no se detuvo — Proverbio chino
+Un solo palillo se rompe; un manojo, no — Proverbio chino
+No es la montaña lo que te cansa, sino la piedrecita en el zapato — Proverbio chino
+Ríe y el mundo reirá contigo — Proverbio chino
+Quien no avanza, retrocede — Proverbio chino
+Mil veces te caes, mil y una te levantas — Proverbio chino
+Una imagen vale más que mil palabras — Proverbio chino
+Con paciencia y constancia, la piedra se vuelve aguja — Proverbio chino
+El que vive con prisa no ve el paisaje — Proverbio chino
+La mano que da, recibe el doble — Proverbio chino
+Más vale una pequeña luz que una gran oscuridad — Proverbio chino
+Lo que no empiezas hoy, mañana no estará terminado — Proverbio chino
+Quien aprende sin cesar, siempre es joven — Proverbio chino
+El mejor remedio para el cansancio es el trabajo bien hecho — Proverbio chino
+Cada paso, por pequeño que sea, te acerca al destino — Proverbio chino
+El que persevera, el camino le abre — Proverbio chino`;
+const CEL2=`La esperanza es el sueño del hombre despierto — Aristóteles
+La mejor victoria es vencerse a uno mismo — Platón
+Nadie se baña dos veces en el mismo río — Heráclito
+Mientras vivimos, aprendamos a vivir — Séneca
+No hay viento favorable para quien no sabe adónde va — Séneca
+No son las cosas las que nos perturban, sino la opinión que tenemos de ellas — Epicteto
+Lo que no beneficia a la colmena tampoco beneficia a la abeja — Marco Aurelio
+Lo que puedas hacer, o sueñes que puedes, comiénzalo: la audacia tiene genio — Goethe
+Para los valientes, el futuro es la oportunidad — Victor Hugo
+Cuando quieres algo, todo el universo conspira para ayudarte a conseguirlo — Paulo Coelho
+La victoria pertenece al más perseverante — Napoleón Bonaparte
+Vive como si fueras a morir mañana; aprende como si fueras a vivir siempre — Mahatma Gandhi
+No soy un santo, a menos que un santo sea un pecador que sigue intentándolo — Nelson Mandela
+Si no puedes volar, corre; si no puedes correr, camina; pero sigue adelante — Martin Luther King
+Tengo un sueño — Martin Luther King
+Nunca, nunca, nunca te rindas — Winston Churchill
+Lo más difícil es la decisión de actuar; el resto es mera tenacidad — Amelia Earhart
+No tienes que ser grande para empezar, pero tienes que empezar para ser grande — Zig Ziglar
+Imposible es solo una palabra que usan los hombres pequeños — Muhammad Ali
+El éxito no es accidente: es trabajo duro, perseverancia y aprendizaje — Pelé
+Tus luchas desarrollan tus fuerzas — Arnold Schwarzenegger
+Dos caminos se bifurcaron en un bosque, y yo tomé el menos transitado — Robert Frost
+Haz lo que temes y la muerte del miedo es segura — Ralph Waldo Emerson
+Nada grande se logró jamás sin entusiasmo — Ralph Waldo Emerson
+Ve con confianza en la dirección de tus sueños — Henry David Thoreau
+Todos piensan en cambiar el mundo, pero nadie piensa en cambiarse a sí mismo — León Tolstói
+El secreto de la existencia no es solo vivir, sino saber para qué se vive — Dostoievski
+Caminante, no hay camino, se hace camino al andar — Antonio Machado
+Todo hombre puede ser, si se lo propone, escultor de su propio cerebro — Santiago Ramón y Cajal
+Yo soy yo y mi circunstancia — José Ortega y Gasset
+El éxito no es la clave de la felicidad; la felicidad es la clave del éxito — Albert Schweitzer
+Qué maravilloso es que nadie tenga que esperar para empezar a mejorar el mundo — Anne Frank
+En la vida no hay nada que temer, solo hay que comprender — Marie Curie
+No todos podemos hacer grandes cosas, pero sí pequeñas cosas con gran amor — Madre Teresa
+El riesgo viene de no saber lo que estás haciendo — Warren Buffett
+La felicidad no es algo hecho: viene de tus propias acciones — Dalai Lama
+No esperes: el momento nunca será el adecuado — Napoleon Hill
+La paciencia es amarga, pero su fruto es dulce — Aristóteles
+Aquello que no se usa se oxida — Leonardo da Vinci
+La vida es una aventura atrevida o no es nada — Helen Keller
+Lo mejor está por venir — Frank Sinatra
+Haz hoy lo que otros no quieren, y mañana vivirás como otros no pueden — Jerry Rice
+Nuestra mayor debilidad es rendirnos; la forma más segura de tener éxito es intentarlo una vez más — Thomas Edison`,
+MOT2=`Lo que te separa de tu tarde es un poco más de paciencia.
+Hoy toca terminar fuerte.
+Tu esfuerzo de hoy abre las puertas de mañana.
+Un día menos de lucha, un día más de victoria.
+Lo estás haciendo genial; sigue así.
+Haz una última cosa bien y habrás ganado el día.
+No hay prisa, pero tampoco pausa.
+Tu constancia es tu mayor talento.
+Quien no se rinde ya ha ganado a medias.
+Que el reloj corra: tú ya has cumplido.
+Cada tarea cuenta; cada minuto suma.
+El trabajo bien hecho es su propia recompensa.
+Termina lo que empezaste y celébralo.
+Pocas cosas saben mejor que el deber cumplido.
+Hoy has sido más fuerte que tus excusas.
+Un buen final le da sentido a todo el día.
+Respira: casi lo tienes.
+Eres más resistente de lo que pareces.
+Vas por buen camino; no mires atrás.
+Lo difícil de hoy es lo fácil de mañana.
+El talento abre puertas; la disciplina las mantiene abiertas.
+Quien trabaja con alegría trabaja dos veces mejor.
+Sé el compañero que te gustaría tener.
+La amabilidad cuesta poco y rinde mucho.
+Tu energía se contagia: elige bien cuál repartes.
+Hoy fuiste un poco mejor que ayer.
+No hay atajos, pero sí buenos compañeros de viaje.
+Convierte los problemas en puzles y disfruta resolviéndolos.
+Cada error es un paso hacia el acierto.
+Aprende, sonríe, repite.
+Tu trabajo es un ladrillo de algo grande.
+La suerte favorece al que se esfuerza.
+La paciencia es la mejor armadura.
+La prisa es mala consejera; la calma, buena compañera.
+Hoy diste tu mejor versión disponible.
+Avanzar un poco cada día es avanzar mucho.
+Ni el cansancio ni el lunes pueden contigo.
+Confía en el proceso y en ti.
+Lo que haces importa, aunque hoy no lo veas.
+Eres la prueba de que se puede.
+Todo esfuerzo deja huella.
+Cuando creas que no puedes más, recuerda cuánto has podido ya.
+Un respiro, una sonrisa y a por la última hora.
+Merece la pena cada esfuerzo que te acerca a casa.
+Pequeñas victorias, grandes jornadas.
+Quien cuida los detalles construye maestría.
+Tu actitud es tu mejor herramienta de trabajo.
+No hay trabajo pequeño cuando se hace con orgullo.
+Cada día aprendes algo que antes no sabías.
+Tu equipo cuenta contigo, y tú puedes con todo.
+Siempre hay una hora más para ser mejor.
+Hazlo con corazón y saldrá solo.
+La energía no se agota: se administra.
+Estás a punto de ganarte tu tarde.
+Hoy escribiste otra buena página de tu historia.
+Orgulloso de lo que has hecho, tranquilo por lo que viene.
+Hoy también cumpliste. Ahora toca disfrutar.`,
+CHI2=`Quien no ha subido a la montaña no sabe lo grande que es el cielo — Proverbio chino
+Una palabra amable calienta tres inviernos — Proverbio chino
+Es mejor aprender un poco bien que mucho mal — Proverbio chino
+Quien sabe contentarse siempre es rico — Proverbio chino
+Una hormiga pequeña mueve un grano grande si insiste — Proverbio chino
+El que quiere pescar tiene que mojarse — Proverbio chino
+El maestro abre la puerta; el discípulo entra solo — Proverbio chino
+La confianza se gana en gotas y se pierde a cubos — Proverbio chino
+Si quieres ver el valle, sube a la montaña — Proverbio chino
+El perezoso espera la cosecha; el sabio siembra — Proverbio chino
+Un buen comienzo es la mitad del trabajo — Proverbio chino
+Quien da el primer paso ya recorrió la mitad — Proverbio chino
+Un árbol de un abrazo nace de un brote diminuto — Proverbio chino
+Una sola mano no aplaude — Proverbio chino
+Con muchas manos, la carga pesa menos — Proverbio chino
+El mejor maestro es la experiencia — Proverbio chino
+La verdadera riqueza es la paz del corazón — Proverbio chino
+El que pregunta el camino no se pierde — Proverbio chino
+Agua que no corre se pudre; mente que no se mueve, también — Proverbio chino
+Una sonrisa abre más puertas que una llave — Proverbio chino
+La tranquilidad es la mejor armadura — Proverbio chino
+Para llegar lejos hay que partir bien — Proverbio chino
+Mil palabras no valen un hecho — Proverbio chino
+Una pequeña grieta hunde un gran barco — Proverbio chino
+Más vale sudar en el trabajo que llorar en la necesidad — Proverbio chino
+Después de la lluvia, el campo florece — Proverbio chino
+Lo más largo del camino es el primer paso — Proverbio chino
+Camina despacio, pero nunca marcha atrás — Proverbio chino
+El diamante sin pulir no brilla — Proverbio chino
+La noche más oscura es la antesala del amanecer — Proverbio chino
+Quien ahorra un grano cada día acaba con un granero — Proverbio chino
+Cuando bebas agua, recuerda la fuente — Proverbio chino
+Cada gota cuenta en el mar — Proverbio chino
+Un hombre prudente no cae dos veces en la misma trampa — Proverbio chino
+Quien tiene salud tiene mil deseos; quien no, solo uno — Proverbio chino
+Si hoy no aprendes, mañana no sabrás — Proverbio chino
+No midas el camino: da el siguiente paso — Proverbio chino
+Hasta un viaje de mil li empieza bajo tus pies — Proverbio chino`;
+const CEL3=`Intenta no volverte un hombre de éxito, sino un hombre de valor — Albert Einstein
+Lo importante es no dejar de hacerse preguntas — Albert Einstein
+Una vida sin examen no merece ser vivida — Sócrates
+El comienzo es la parte más importante del trabajo — Platón
+Mientras hay vida, hay esperanza — Cicerón
+No es porque las cosas sean difíciles que no nos atrevemos; es porque no nos atrevemos que son difíciles — Séneca
+La felicidad de tu vida depende de la calidad de tus pensamientos — Marco Aurelio
+Primero dite a ti mismo lo que quieres ser; luego haz lo que tengas que hacer — Epicteto
+Estudia el pasado si quieres definir el futuro — Confucio
+No importa lo lento que vayas, mientras no te detengas — Confucio
+Quien domina a otros es fuerte; quien se domina a sí mismo es poderoso — Lao Tse
+La naturaleza no se apresura, y sin embargo todo se cumple — Lao Tse
+La fuerza no viene de la capacidad física, sino de una voluntad indomable — Mahatma Gandhi
+La educación es el arma más poderosa para cambiar el mundo — Nelson Mandela
+Para mejorar es preciso cambiar; para ser perfecto, hay que cambiar a menudo — Winston Churchill
+Un pesimista ve la dificultad en cada oportunidad; un optimista, la oportunidad en cada dificultad — Winston Churchill
+Hay una manera de hacerlo mejor: encuéntrala — Thomas Edison
+Reunirse es el comienzo; mantenerse juntos es el progreso; trabajar juntos es el éxito — Henry Ford
+El fracaso es la oportunidad de comenzar de nuevo, esta vez de forma más inteligente — Henry Ford
+Tu tiempo es limitado: no lo malgastes viviendo la vida de otro — Steve Jobs
+La innovación es lo que distingue a un líder de un seguidor — Steve Jobs
+La vida es demasiado importante como para tomársela en serio — Oscar Wilde
+Cuanto más trabajo, más suerte tengo — Thomas Jefferson
+No es la especie más fuerte la que sobrevive, sino la que mejor se adapta al cambio — Charles Darwin
+Si he visto más lejos es porque estoy sobre hombros de gigantes — Isaac Newton
+Mira a las estrellas y no a tus pies — Stephen Hawking
+El presente es de ellos, pero el futuro, por el que tanto he trabajado, es mío — Nikola Tesla
+Haz lo mejor que puedas hasta que sepas más; cuando sepas más, hazlo mejor — Maya Angelou
+Haz algo cada día que te dé miedo — Eleanor Roosevelt
+Nadie puede hacerte sentir inferior sin tu consentimiento — Eleanor Roosevelt
+Lo mejor del mundo no puede verse ni tocarse: debe sentirse con el corazón — Helen Keller
+La inspiración existe, pero tiene que encontrarte trabajando — Pablo Picasso
+Las grandes cosas se hacen con una serie de pequeñas cosas juntas — Vincent van Gogh
+La mejor salsa del mundo es el hambre — Miguel de Cervantes
+Donde una puerta se cierra, otra se abre — Miguel de Cervantes
+No es cuántas veces caes, sino cuántas veces te levantas — Vince Lombardi
+La perfección no se puede alcanzar, pero si la perseguimos podemos alcanzar la excelencia — Vince Lombardi
+Nunca dejes que el miedo a fallar te impida jugar — Babe Ruth
+Fallas el cien por cien de los tiros que no intentas — Wayne Gretzky
+Si quieres correr, corre una milla; si quieres vivir otra vida, corre un maratón — Emil Zátopek
+Somos lo que hacemos con lo que hicieron de nosotros — Jean-Paul Sartre
+No puedes cruzar el mar simplemente mirando el agua — Rabindranath Tagore
+Cuando pierdas, no pierdas la lección — Dalai Lama
+El hombre que no tiene imaginación no tiene alas — Muhammad Ali
+Sé agua, amigo mío — Bruce Lee
+Llegué, vi, vencí — Julio César
+Y sin embargo se mueve — Galileo Galilei
+Nunca dejes para mañana lo que puedas hacer hoy — Benjamin Franklin
+Vivir es lo más raro del mundo: la mayoría de la gente existe, nada más — Oscar Wilde
+La paz viene de dentro; no la busques fuera — Buda
+La edad es cuestión de mente sobre materia: si no te importa, no importa — Mark Twain
+El único lugar donde el éxito viene antes que el trabajo es el diccionario — Vidal Sassoon`,
+MOT3=`Hoy también has hecho historia en tu pequeño rincón del mundo.
+La jornada se acaba, tu esfuerzo permanece.
+Lo mejor del esfuerzo es la calma que viene después.
+Sigue sonriendo: la meta está a la vuelta de la esquina.
+Cada paso cuenta, incluso los que no ves.
+Eres el motor y el volante de tu vida.
+La disciplina de hoy es la libertad de mañana.
+Un buen trabajador merece un buen descanso.
+Tu esfuerzo no se pierde: se convierte en experiencia.
+Piensa en lo que ya lograste, no en lo que falta.
+Haz que cada hora sea tuya.
+Lo que hoy es difícil, mañana será fácil.
+Lo importante es llegar con la conciencia tranquila.
+Cada tarea terminada es un peso menos.
+No hay cima sin cuesta.
+Hoy has plantado semillas; ya florecerán.
+Con tranquilidad todo se ordena.
+Mira hacia delante: la tarde te espera.
+No dejes que un mal momento defina todo tu día.
+La energía que pones vuelve a ti multiplicada.
+Todo es más ligero cuando se hace con ganas.
+Tu mejor trabajo está en el siguiente paso.
+Hoy se recoge lo que se sembró ayer.
+Respira, suelta tensión y termina con elegancia.
+Puedes con esto y con lo que venga.
+La excelencia vive en los pequeños detalles.
+Tienes todo lo necesario para acabar el día con éxito.
+Ser constante cuando no apetece es la mayor victoria.
+Sigue: la recompensa está en el camino.
+Lo que hoy construyes, mañana te sostiene.
+Cada jornada superada te hace más fuerte.
+Lo que parece rutina es en realidad entrenamiento.
+Ríete de los problemas: son temporales.
+Hay una gran satisfacción en acabar lo que empezaste.
+El mejor momento para sonreír es ahora.
+Tus ganas valen más que tu cansancio.
+Pon música a tu esfuerzo y baila con las tareas.
+Hoy no todo salió perfecto, y aun así lo diste todo.
+Estás construyendo hábitos que te harán imparable.
+Cuando termines, desconecta y recárgate.
+Un día bien trabajado es un sueño bien merecido.
+Nada te detiene cuando sabes adónde vas.
+Un día más para sentirte orgulloso de ti.
+Tu determinación es contagiosa.
+El tiempo pasa; que sea con propósito.
+Lo mejor de hoy: haber dado lo mejor de ti.
+Aprovecha lo que queda de jornada con buen ánimo.
+Cuida tu mente igual que tu trabajo.
+Mantente firme: el cierre es la parte más dulce.
+Eres capaz de convertir un día normal en uno brillante.
+Lo bueno de acabar es que puedes empezar a disfrutar.
+No te cargues con lo que no puedes controlar.
+Cada logro, por pequeño que sea, merece celebrarse.
+Rodéate de personas que sumen y sé de los que suman.
+Un buen líder empieza por liderarse a sí mismo.
+Agradece lo conseguido y sigue adelante.
+El orgullo de un trabajo bien hecho no tiene precio.
+Haz que cada interacción deje buen recuerdo.
+Con actitud, hasta el lunes es bonito.
+Mantén la calma: tu ritmo es el correcto.
+Lo que hoy es esfuerzo, mañana será habilidad.
+Sé constante y el resto llegará.
+No te rindas justo cuando estás más cerca.
+Sonríe, que ya queda poco.
+Tu energía es tu mayor riqueza; cuídala.
+Todo gran logro fue alguna vez un pequeño intento.
+La vida premia a quienes aparecen cada día.
+Haz de tu esfuerzo tu mejor carta de presentación.
+Las buenas rachas empiezan con un buen día.
+La paciencia convierte los días largos en días cumplidos.
+Hoy te has ganado una buena tarde.`,
+CHI3=`El sabio no se lamenta por lo que no tiene, sino que se alegra con lo que posee
+Lo que oigo, lo olvido; lo que veo, lo recuerdo; lo que hago, lo aprendo
+El que no sabe sonreír no debe abrir tienda
+Un grano de arroz cada día llena el cuenco con los años
+Antes de arreglar el mundo, arregla tu propia casa
+La vela no pierde nada al encender otra vela
+El hierro se forja golpeando; el carácter, trabajando
+El que mira solo sus pies no ve la montaña
+Cuando la gente trabaja unida, el barro se vuelve oro
+El sol sale para todos
+Un día de esfuerzo, un año de cosecha
+Pule la piedra hoy y mañana brillará la joya
+Toda primavera nace de un invierno
+La mente tranquila ve el fondo del lago
+Lo que ayer fue un obstáculo, hoy es un escalón
+No hay tarea pequeña para quien quiere hacerla bien
+Quien sabe esperar ve crecer el arroz
+Si cuidas el presente, el futuro cuidará de ti
+Se aprende más de una caída que de cien caminos llanos
+Unas gotas de sudor ahorran muchas lágrimas
+El hilo más fino sostiene la tela más grande
+Hasta la torre más alta empieza con un ladrillo
+Quien riega con paciencia recoge flores
+Quien aprende un poco cada día sabe mucho al cabo del año
+Una luz pequeña en la noche guía a muchos viajeros
+Gana quien sabe esperar su momento
+Lo importante no es la prisa, sino la dirección
+El tiempo es un río: no lo detengas, navégalo
+La sabiduría empieza por reconocer lo que no sabemos
+Pensar mucho y hacer poco no llena el cuenco de arroz
+Cuando dos corazones reman a la vez, el bote vuela
+Una carga compartida pesa la mitad
+Todo árbol fuerte tuvo que resistir el viento
+El hombre perseverante hace brotar una fuente de la roca
+Antes de reparar la casa ajena, barre tu puerta
+Con calma se puede cruzar un río de mil olas
+La gota de hoy llena el estanque de mañana
+Siembra amabilidad y cosecharás amistad
+No hay noche tan larga que impida que salga el sol
+Quien escucha con atención cosecha sabiduría
+Por muy alto que vueles, tus raíces te sostienen
+Un barco no se hunde por el agua que lo rodea, sino por la que entra
+Hoy es el mejor día para empezar
+La felicidad no está en llegar, sino en andar
+Quien se alegra con lo pequeño disfruta de lo grande
+Un pequeño esfuerzo diario mueve la montaña más grande
+Quien nada contra la corriente se hace más fuerte
+La hierba crece sin que la veas, pero crece
+El que siembra hoy no teme al invierno
+Dos buenos remeros cruzan cualquier río
+Un camino largo se recorre con paso firme
+Quien encuentra su rumbo no teme a la tormenta`;
+const CEL4=`La puerta de la felicidad se abre hacia fuera — Søren Kierkegaard
+Todo lo que puedas imaginar es real — Pablo Picasso
+El éxito es ir de fracaso en fracaso sin perder el entusiasmo — Winston Churchill
+Si no sabes adónde quieres ir, qué más da el camino que tomes — Lewis Carroll
+La vida no se mide por las veces que respiras, sino por los momentos que te dejan sin aliento — Maya Angelou
+No hay ascensor hacia el éxito: hay que subir por las escaleras — Zig Ziglar
+Cuanto más practico, más suerte tengo — Gary Player
+El valor no es la ausencia de miedo, sino la decisión de que algo es más importante — Ambrose Redmoon
+El camino hacia el éxito siempre está en construcción — Lily Tomlin
+La vida es un diez por ciento lo que te sucede y un noventa por ciento cómo reaccionas — Charles R. Swindoll
+Haz de tu vida un sueño y de tu sueño una realidad — Antoine de Saint-Exupéry
+Lo esencial es invisible a los ojos — Antoine de Saint-Exupéry
+Lo que embellece al desierto es que esconde un pozo en cualquier parte — Antoine de Saint-Exupéry
+Un objetivo sin un plan es solo un deseo — Antoine de Saint-Exupéry
+La gratitud convierte lo que tenemos en suficiente — Melody Beattie
+Quien lee vive mil vidas — George R. R. Martin
+La creatividad es la inteligencia divirtiéndose — Albert Einstein
+Hay una fuerza más poderosa que el vapor y la electricidad: la voluntad — Albert Einstein
+Pensar es el trabajo más difícil, por eso pocos lo practican — Henry Ford
+El fracaso es el condimento que da sabor al éxito — Truman Capote
+El verdadero viaje de descubrimiento consiste en mirar con nuevos ojos — Marcel Proust
+El único modo de descubrir los límites de lo posible es aventurarse un poco más allá — Arthur C. Clarke
+El trabajo duro vence al talento cuando el talento no trabaja duro — Tim Notke
+El mundo está en manos de quienes tienen el coraje de soñar — Paulo Coelho
+No hay camino para la felicidad: la felicidad es el camino — Thich Nhat Hanh
+La felicidad depende de nosotros mismos — Aristóteles
+Sueña como si fueras a vivir para siempre; vive como si fueras a morir hoy — James Dean
+La suerte es el residuo del diseño — Branch Rickey
+Nuestra vida es lo que nuestros pensamientos hacen de ella — Marco Aurelio
+Todo tiene su belleza, pero no todos la ven — Confucio
+Dondequiera que haya un ser humano, hay una oportunidad para la bondad — Séneca
+La mente no es un vaso por llenar, sino un fuego por encender — Plutarco
+Quien se conforma siempre tendrá lo suficiente — Lao Tse
+Si conoces al enemigo y te conoces a ti mismo, no temas el resultado de cien batallas — Sun Tzu
+La suprema excelencia consiste en vencer sin luchar — Sun Tzu
+Hoy es la victoria sobre ti mismo de ayer — Miyamoto Musashi
+La gratitud es la madre de todas las demás virtudes — Cicerón
+La música es para el alma lo que la gimnasia para el cuerpo — Platón
+Ten el coraje de seguir a tu corazón y a tu intuición — Steve Jobs
+Cuando algo es lo bastante importante, lo haces aunque las probabilidades no estén a tu favor — Elon Musk
+Quien no arriesga no gana — Proverbio popular`,
+MOT4=`Nadie dijo que fuera fácil; tú lo estás logrando.
+Eres mejor de lo que crees y más fuerte de lo que sabes.
+Que tu actitud sea tu bandera.
+Cada día es una oportunidad para brillar.
+Haz que valga la pena cada minuto de hoy.
+Lo estás haciendo mejor que nunca.
+La alegría de acabar bien vale oro.
+Más sonrisas, menos prisas.
+La clave está en no parar.
+Entrega lo mejor de ti y deja el resto al destino.
+Cierra bien el día y abre mejor la tarde.
+Los pequeños detalles hacen los grandes resultados.
+Hoy vuelves a casa con la cabeza bien alta.
+Disfruta de cada logro, sin importar su tamaño.
+Un paso más y puedes descansar.
+Tu energía hace brillar al equipo.
+Nada es imposible para quien no deja de intentarlo.
+La mejor victoria es la que consigues contigo mismo.
+Que el cansancio no apague tu sonrisa.
+El éxito es hacer bien lo cotidiano.
+Esta hora cuenta tanto como la primera.
+Lo bueno viene para quienes no se rinden.
+Con buen humor todo pesa menos.
+Cada jornada es una nueva oportunidad de superarte.
+Para terminar fuerte, solo hay que no aflojar.
+Orgullo es saber que lo diste todo.
+Tu constancia habla por ti.
+Hoy has dado un paso más hacia tus sueños.
+Respira profundo: casi, casi.
+Sigue brillando, que lo estás haciendo bien.`,
+CHI4=`Aprende de la tortuga: no se detiene y llega
+El jade no se pule sin fricción, ni el hombre sin dificultades
+Quien camina con ligereza llega más lejos
+La verdadera sabiduría es saber que no lo sabes todo
+Si no quieres que te arrastre la corriente, aprende a nadar
+El mejor momento para empezar es cuando aún no estás listo
+Con una sola chispa se enciende un fuego; con un solo paso, un camino
+Cultiva tu jardín y las flores vendrán solas
+Hasta la noche más larga termina con el canto del gallo
+Un clavo bien puesto sostiene toda una casa
+No te preocupes por caer; preocúpate por no levantarte
+Quien guarda la calma gana la batalla
+No juzgues la montaña sin haberla subido
+La constancia derrota a la roca más dura
+Los grandes ríos nacen de pequeños manantiales
+Un hombre sin metas es un barco sin timón
+La riqueza se acaba; la sabiduría, no
+Para dar un gran salto, primero hay que agacharse
+Quien no teme a la lluvia aprende a bailar bajo ella
+El lago más hondo es el más quieto
+Un buen tejedor empieza por un solo hilo
+Sembrar hoy es cosechar mañana
+Antes de correr, aprende a caminar
+El paso más importante es el que das ahora
+Una pequeña llama basta para iluminar toda una habitación
+El éxito es una escalera: no se sube con las manos en los bolsillos
+La luna brilla aunque haya nubes
+Un día de trabajo bien hecho es una noche de buen sueño
+Un puente se construye piedra a piedra
+Quien tiene un objetivo encuentra la senda hasta en la niebla
+Cada nuevo día es una página en blanco
+Quien no conoce el valor del tiempo no conoce el valor de la vida
+La mejor cosecha llega a quien no se cansa de regar
+Un solo paso en falso se corrige con el siguiente paso firme
+El que se esfuerza hoy sonríe mañana
+No hay camino difícil para quien tiene la voluntad de andarlo`;
+const GA=["Tu esfuerzo","Tu constancia","Tu paciencia","Tu actitud","Tu disciplina","Tu entusiasmo","Tu dedicación","Tu trabajo","Tu valentía","Tu sonrisa"],
+GB=["tu orgullo","tu éxito","tu libertad","tu fortaleza","tu recompensa","tu mejor historia","tu tranquilidad","tu ventaja","tu confianza"],
+GX=["paso","esfuerzo","minuto","tarea terminada","sonrisa","decisión valiente","hora bien trabajada","pequeño avance","respiro","día superado"],
+GY=["tu meta","tu libertad","tu tarde","tu descanso","tus sueños","tu mejor versión","tu recompensa","un mañana mejor"],
+GS=["paciente","constante","valiente","amable","positivo","imparable","agradecido"],GW=["ganas","calma","ilusión","entusiasmo","corazón","alegría"],
+GR=["el éxito llegará","la tarde será tuya","todo saldrá bien","terminarás con orgullo","nada te detendrá","lo conseguirás"],GEN=[];
+/* Frases motivadoras de fórmula: combinan piezas para generar cientos de variantes */
+GA.forEach(a=>GB.forEach(b=>GEN.push([`${a} de hoy es ${b} de mañana.`,""])));
+GX.forEach(x=>GY.forEach(y=>GEN.push([`Cada ${x} te acerca a ${y}.`,""])));
+GS.forEach((x,i)=>GW.forEach((w,j)=>GEN.push([`Sé ${x}, trabaja con ${w} y ${GR[(i+j)%6]}.`,""])));
+const CEL5=`El hombre es la medida de todas las cosas — Protágoras
+La virtud está en el término medio — Aristóteles
+Conócete a ti mismo — Inscripción del templo de Delfos
+La vida, si sabes usarla, es larga — Séneca
+Cada día es una vida pequeña — Séneca
+La vida es como una obra de teatro: no importa cuánto dure, sino cuán bien esté representada — Séneca
+La fortuna ayuda a los audaces — Virgilio
+Vivir es pensar — Cicerón
+El hombre que comete un error y no lo corrige comete otro mayor — Confucio
+Dondequiera que vayas, ve con todo tu corazón — Confucio
+El que sabe no habla; el que habla no sabe — Lao Tse
+Cuando sueltas lo que eres, te conviertes en lo que podrías ser — Lao Tse
+Pienso, luego existo — René Descartes
+Pensamos demasiado y sentimos muy poco — Charles Chaplin
+La oscuridad no puede expulsar a la oscuridad; solo la luz puede hacerlo — Martin Luther King
+Nuestras vidas empiezan a terminar el día en que guardamos silencio sobre lo que importa — Martin Luther King
+Sin lucha no hay progreso — Frederick Douglass
+Si no puedes explicarlo de forma sencilla, no lo entiendes bien — Albert Einstein
+Nunca consideres el estudio como una obligación, sino como una oportunidad — Albert Einstein
+Estamos hechos de polvo de estrellas — Carl Sagan
+En algún lugar, algo increíble está esperando ser descubierto — Carl Sagan
+La vida no es fácil para ninguno de nosotros, pero hay que tener perseverancia y confianza en uno mismo — Marie Curie
+La suerte favorece solo a la mente preparada — Louis Pasteur
+Mi fuerza reside únicamente en mi tenacidad — Louis Pasteur
+El conocimiento es hijo de la experiencia — Leonardo da Vinci
+La calidad significa hacerlo bien cuando nadie está mirando — Henry Ford
+Nada es particularmente difícil si lo divides en pequeños trabajos — Henry Ford
+Seguimos adelante, abriendo nuevas puertas, porque somos curiosos — Walt Disney
+La calidad es más importante que la cantidad — Steve Jobs
+Si te ofrecen una gran oportunidad y no estás seguro, di que sí y aprende después — Richard Branson
+El servicio a los demás es el alquiler que pagas por tu habitación en la tierra — Muhammad Ali
+Algunos quieren que suceda, otros desean que suceda, otros hacen que suceda — Michael Jordan
+Todo es práctica — Pelé
+No puedes poner límites a nada: cuanto más sueñas, más lejos llegas — Michael Phelps
+El tiempo es la sustancia de que estoy hecho — Jorge Luis Borges
+Mucha gente pequeña, en lugares pequeños, haciendo cosas pequeñas, puede cambiar el mundo — Eduardo Galeano
+Sin música la vida sería un error — Friedrich Nietzsche
+Debes tener caos dentro de ti para dar a luz una estrella danzante — Friedrich Nietzsche
+No basta saber, se debe aplicar; no basta querer, se debe hacer — Goethe
+Para que lo posible aparezca, hay que intentar lo imposible — Hermann Hesse
+Son nuestras decisiones las que muestran lo que somos, mucho más que nuestras habilidades — J. K. Rowling
+No es oro todo lo que reluce — J. R. R. Tolkien
+Nunca eres demasiado viejo para fijarte otra meta o soñar un nuevo sueño — C. S. Lewis
+Amarse a uno mismo es el comienzo de un romance para toda la vida — Oscar Wilde
+Los dos días más importantes de tu vida son el día en que naciste y el día en que descubres por qué — Mark Twain
+El mundo rompe a todos, y después algunos son fuertes en los lugares rotos — Ernest Hemingway
+Un hombre puede ser destruido, pero no derrotado — Ernest Hemingway
+La verdadera generosidad con el porvenir consiste en darlo todo al presente — Albert Camus
+Cuando ya no podemos cambiar una situación, el desafío es cambiarnos a nosotros mismos — Viktor Frankl
+Si quieres que otros sean felices, practica la compasión — Dalai Lama
+Si no puedes alimentar a cien personas, alimenta solo a una — Madre Teresa
+El valiente no es quien no siente miedo, sino quien lo conquista — Nelson Mandela
+Después de escalar una colina muy alta, descubres que hay muchas otras por escalar — Nelson Mandela
+Quien es feliz hará felices a los demás — Anne Frank
+El optimismo es la fe que conduce al logro — Helen Keller
+Mantén la cara hacia el sol y no verás las sombras — Helen Keller
+El precio de la grandeza es la responsabilidad — Winston Churchill
+No preguntes qué puede hacer tu país por ti; pregunta qué puedes hacer tú por tu país — John F. Kennedy
+Nada en el mundo vale la pena si no requiere esfuerzo — Theodore Roosevelt
+Una inversión en conocimiento paga el mejor interés — Benjamin Franklin
+Lo mejor es enemigo de lo bueno — Voltaire
+El que canta, sus males espanta — Miguel de Cervantes
+Cada uno es artífice de su ventura — Miguel de Cervantes
+La vida es sueño — Pedro Calderón de la Barca
+Nada te turbe, nada te espante, todo se pasa — Santa Teresa de Jesús
+Yo no estudio para saber más, sino para ignorar menos — Sor Juana Inés de la Cruz
+Ser culto es el único modo de ser libre — José Martí
+Si la naturaleza se opone, lucharemos contra ella — Simón Bolívar
+Tres cosas no pueden ocultarse mucho tiempo: el sol, la luna y la verdad — Buda
+Tu trabajo es descubrir tu trabajo y entregarte a él con todo tu corazón — Buda
+La mente lo es todo: te conviertes en lo que piensas — Buda
+Lo que buscas te está buscando — Rumi
+La herida es el lugar por donde entra la luz — Rumi
+La fe es el pájaro que siente la luz y canta cuando el alba aún es oscura — Rabindranath Tagore
+Absorbe lo que es útil, descarta lo inútil y añade lo que es específicamente tuyo — Bruce Lee
+La simplicidad es la clave de la brillantez — Bruce Lee
+Quien sabe cuándo luchar y cuándo no, vencerá — Sun Tzu
+Hay más en la vida que aumentar su velocidad — Mahatma Gandhi`,
+CHI5=`Un camino de mil li se anda con un pie delante del otro
+El cerezo florece cuando le toca, ni antes ni después
+No temas al invierno: la nieve cuida las semillas
+La paciencia del agricultor llena el granero
+La gota insistente perfora el mármol
+Quien planta bambú no ve la sombra el primer año
+La carpa que remonta el río acaba convertida en dragón
+Una persona prudente mira dos veces antes de dar el primer paso
+La paciencia es la llave del éxito
+Quien sabe cuándo parar no se estrella
+Afila el hacha antes de cortar el árbol
+Mejor un instante de silencio que mil palabras vanas
+Quien tiene la mente abierta aprende de cada piedra
+La montaña más alta se sube un paso cada vez
+Al buen árbol se le conoce por sus frutos
+El sabio construye puentes; el necio, muros
+Tu mayor enemigo es la prisa
+Cuando el trabajo es sincero, el cansancio es dulce
+Aunque el camino sea largo, llega quien camina
+La semilla no se apura, pero tampoco se detiene
+Con un corazón en paz, el mundo es un jardín
+Hay que remar aunque el viento sople en contra
+La tortuga llega a la meta porque no se distrae
+Cuando el discípulo está listo, aparece el maestro
+Quien trabaja con ilusión ve brillar hasta el barro
+Ríos y montañas se cruzan con un paso decidido
+Cuando el pueblo suma, la montaña se mueve
+Un hombre alegre vale por tres
+La sonrisa es la puerta del corazón
+Quien mira hacia delante no tropieza con el pasado
+La suerte favorece a quien siembra con las dos manos
+Con gentileza se abren las puertas más pesadas
+La fuerza del bambú está en su flexibilidad
+El tiempo es el mejor maestro y también el mejor médico
+No hay rama que no crezca hacia la luz
+Tras cada colina hay otro camino
+Quien da gracias nunca está pobre
+Con pequeñas gotas se llena el río
+Si no puedes mover la piedra, rodéala
+Todo gran rey fue un día un cachorro
+El orden en casa es la paz del alma
+Más vale una hora de trabajo con ganas que un día de mala gana
+La vida es como un té: se disfruta sorbo a sorbo
+Aprende hoy lo que mañana enseñarás
+La confianza es el puente que acorta el camino
+No mires la distancia; mira tus pasos
+Quien ayuda a otros a cruzar el río también llega a la orilla
+Una casa grande empieza con una piedra bien puesta
+La noche pasa y la mañana llega: confía
+Bajo la nieve, la semilla sueña con la primavera
+Un corazón alegre es la mejor medicina
+Un sabio sonríe antes de hablar
+El carácter se forja con pequeñas victorias diarias
+Cuando brilla el sol, hay que secar el arroz
+La esperanza es una semilla que florece con constancia
+De la roca más dura también brota el manantial
+Quien siembra ilusión cosecha energía
+Quien conserva la calma ve el camino
+Mejor pequeño y firme que grande y frágil
+Un viaje feliz empieza con ganas
+El que remonta la corriente conoce la fuerza del río
+No hay atajo para el que quiere llegar de verdad
+La hoja que cae anuncia el otoño: observa los detalles
+Con un abanico no se detiene el sol, pero se refresca el día
+El mejor momento para actuar es ahora
+Quien trabaja con alegría cosecha el doble
+El que escucha al viento sabe hacia dónde navegar
+Una buena conversación calienta más que una hoguera
+Bebe té y deja que el tiempo haga su trabajo
+Cada piedra del camino enseña a mirar el suelo y el cielo
+El esfuerzo despierta al talento dormido
+Quien siembra amabilidad recoge amistad
+Quien no se rinde ya ha cruzado medio río
+Aprende a esperar: hasta el arroz necesita su estación
+Todo gran camino tiene su primer paso
+La tranquilidad del lago refleja la luna
+Una brizna de hierba sostiene una gota de rocío: lo pequeño también puede
+El esfuerzo de hoy es la sombra del árbol de mañana
+Un solo pensamiento positivo ilumina todo el día
+Quien aprende con humildad llega más lejos`;
+const CEL6=`Lo más incomprensible del universo es que sea comprensible — Albert Einstein
+Hay dos formas de vivir: como si nada fuera un milagro o como si todo lo fuera — Albert Einstein
+El todo es mayor que la suma de las partes — Aristóteles
+Todos los hombres desean por naturaleza saber — Aristóteles
+La necesidad es la madre de la invención — Platón
+Lo único constante es el cambio — Heráclito
+No es pobre el que tiene poco, sino el que desea más — Séneca
+Una habitación sin libros es como un cuerpo sin alma — Cicerón
+Más vale tarde que nunca — Tito Livio
+Si no es correcto, no lo hagas; si no es verdad, no lo digas — Marco Aurelio
+El obstáculo del camino se convierte en el camino — Marco Aurelio
+Ninguna persona es libre si no es dueña de sí misma — Epicteto
+La mejor forma de encontrarte a ti mismo es perderte en el servicio a los demás — Mahatma Gandhi
+Donde hay amor, hay vida — Mahatma Gandhi
+El tiempo siempre es el adecuado para hacer lo que es correcto — Martin Luther King
+Da el primer paso con fe: no tienes que ver toda la escalera — Martin Luther King
+Si estás atravesando el infierno, sigue adelante — Winston Churchill
+Lo único a lo que debemos temer es al propio miedo — Franklin D. Roosevelt
+Dame seis horas para cortar un árbol y pasaré las primeras cuatro afilando el hacha — Abraham Lincoln
+La mayoría de la gente es tan feliz como decide serlo — Abraham Lincoln
+Quien es bueno poniendo excusas rara vez es bueno para otra cosa — Benjamin Franklin
+Hay que creer que se está dotado para algo y que ese algo hay que alcanzarlo — Marie Curie
+Si vives cada día como si fuera el último, algún día tendrás razón — Steve Jobs
+A veces la vida te golpea con un ladrillo en la cabeza: no pierdas la fe — Steve Jobs
+Se necesitan veinte años para construir una reputación y cinco minutos para arruinarla — Warren Buffett
+Convierte tus heridas en sabiduría — Oprah Winfrey
+Hace falta valor para crecer y convertirte en quien realmente eres — E. E. Cummings
+El secreto de la vida es caer siete veces y levantarse ocho — Paulo Coelho
+Si tus sueños no te asustan, no son lo bastante grandes — Muhammad Ali
+Puedo aceptar el fracaso, pero no puedo aceptar no intentarlo — Michael Jordan
+Si cambias la manera en que miras las cosas, las cosas que miras cambian — Wayne Dyer
+Actúa con entusiasmo y serás entusiasta — Dale Carnegie
+Lo que la mente puede concebir y creer, puede lograrlo — Napoleon Hill
+O diriges el día o el día te dirige a ti — Jim Rohn
+El éxito es hacer lo ordinario extraordinariamente bien — Jim Rohn
+Todo cambio es difícil al principio, caótico en el medio y hermoso al final — Robin Sharma
+La clave no es priorizar lo que figura en tu agenda, sino agendar tus prioridades — Stephen Covey
+Lo que se mide, se mejora — Peter Drucker
+Nada hay tan inútil como hacer eficientemente lo que no debería hacerse — Peter Drucker
+Las personas no compran lo que haces, compran por qué lo haces — Simon Sinek
+Dime con quién andas y te diré quién eres — Miguel de Cervantes
+Donde hay educación no hay distinción de clases — Confucio
+La sabiduría comienza en la admiración — Sócrates
+Sé siempre la mejor versión de ti mismo — Steve Jobs
+El éxito es la suma de pequeños esfuerzos — Robert Collier
+Haz que cada día sea tu obra maestra — John Wooden
+Nunca es demasiado tarde para ser lo que podrías haber sido — George Eliot
+Lo que no se empieza hoy no se termina mañana — Johann Wolfgang von Goethe
+El futuro depende de lo que hagas hoy — Mahatma Gandhi
+No hay nada imposible para quien lo intenta — Alejandro Magno`,
+CHI6=`Quien recoge una piedra cada día construye un muro
+El arroz que no se siembra no se cosecha
+La prisa quema el arroz; la calma lo cuece bien
+Un maestro enseña la puerta; tú la cruzas
+Siembra hoy, aunque llueva
+Del barro nace el loto más bello
+No hay árbol grande sin raíces profundas
+La corriente enseña al río a rodear las rocas
+Cada nube pasa; el cielo permanece
+Pequeña es la semilla, grande es el bosque
+Quien baila con el viento no teme a la tormenta
+Trazo a trazo se pinta un paisaje entero
+La ola más alta también regresa al mar en calma
+Quien cultiva la paciencia cosecha serenidad
+El camino enseña más que la meta
+Cada amanecer es una invitación
+La luz de una vela no se apaga al encender otras
+Un buen artesano nunca culpa a sus herramientas
+La seda se teje hilo a hilo
+Si caes siete veces, levántate ocho
+Con voluntad, el hierro se hace aguja
+Quien vence a su pereza vence media batalla
+La harina del esfuerzo hace el pan del éxito
+Quien aprende a esperar aprende a vivir
+Con un buen corazón, cualquier tarea es ligera
+No hay viento malo para quien sabe izar la vela
+El fuego que calienta empezó siendo chispa
+Quien persevera, al final sonríe
+Quien se levanta con ánimo ya ha ganado la mañana
+La tarde recompensa a quien trabajó la mañana
+Con calma y constancia, la montaña se vuelve camino
+Lo que se hace con alegría se hace bien
+Las raíces crecen en silencio; los frutos se ven
+Quien comparte su luz no se queda a oscuras
+Hasta el río más furioso nace de una fuente tranquila
+No hay mal día para quien lleva el sol por dentro
+Poco a poco, el pincel termina el cuadro
+Cuando el corazón es ligero, el camino es corto
+La disciplina es el puente entre el sueño y la cosecha
+Quien riega sus sueños los ve florecer
+El dragón también empezó siendo un huevo
+La paz se cultiva como un jardín
+Quien cuida lo pequeño cuida lo grande
+Todo trabajo hecho con cariño sabe mejor
+Con el pie firme y la mente tranquila se cruza cualquier puente
+El esfuerzo sincero nunca vuelve con las manos vacías
+Hoy es el mejor día para sembrar
+La alegría del trabajo bien hecho dura más que el cansancio
+Quien da todo lo que tiene siempre recibe más
+Paso a paso, el viajero cruza el desierto
+Una mañana tranquila es la mejor puerta para un buen día
+El hilo de la constancia cose los sueños con la realidad
+Un ladrillo no hace la muralla, pero la muralla empieza con uno
+Quien mira lejos y camina firme llega
+La mejor sombra es la del árbol que uno mismo plantó`;
+/* Frases de fórmula (Motivación): se combinan piezas para generar muchas variantes */
+const cap=t=>t[0].toUpperCase()+t.slice(1),GEN2=[],
+O4=["Lo estás haciendo genial,","Eres más fuerte de lo que crees,","Has dado lo mejor de ti,","Tu esfuerzo no pasa desapercibido,","Cada minuto te acerca a tu meta,","Hoy has superado más de un reto,","Tu constancia es admirable,","Has trabajado con muchas ganas,","Otro día conquistado,","La jornada está a punto de acabar,","Lo difícil ya quedó atrás,","Tu actitud marca la diferencia,","Has aguantado como un campeón,","Hoy también cumpliste,","Estás a un paso de tu libertad,","Tu trabajo vale la pena,","Has sumado un día más a tu historia,","Pocas cosas pueden contigo,","Has hecho equipo contigo mismo,","Con calma y buen ánimo lo lograste,"],
+C4=["así que sonríe.","ya casi lo tienes.","mereces un gran descanso.","sigue brillando.","respira hondo y disfruta.","prepárate para tu tarde.","estás en la recta final.","ve pensando en lo que vas a disfrutar.","tú puedes con todo.","qué orgullo.","la tarde es tuya.","lo mejor está por llegar.","enhorabuena.","sigue así.","celébralo por dentro.","hoy te lo has ganado.","date un respiro de orgullo.","y lo mejor es que aún sonríes."],
+V5=["trabaja con ganas","sonríe a la vida","no se rinde","persevera","da lo mejor de sí","cuida los detalles","sigue adelante","cree en sí mismo","aprende cada día","se esfuerza hoy","mantiene la calma","ayuda a los demás"],
+R5=["termina con orgullo","encuentra su camino","gana el día","consigue lo que se propone","vive más tranquilo","llega más lejos","inspira a los demás","duerme con la conciencia tranquila","disfruta el doble de su tarde","siempre vuelve más fuerte","hace brillar a su equipo","acaba cosechando alegrías"],
+C6=["das lo mejor de ti","sigues adelante","mantienes la calma","sonríes","confías en ti","trabajas con cariño","aprendes de cada error","cuidas a tu equipo","te mantienes constante","disfrutas del camino"],
+R6=["el día te sonríe","todo sale mejor","la tarde sabrá a gloria","llegarás lejos","nada te detiene","el esfuerzo se nota","el éxito te encuentra","disfrutarás más de todo","tu equipo lo agradece","mañana será aún mejor"],
+A7=["trabajas con esfuerzo","siembras ilusión","das lo mejor","aprendes algo nuevo","superas un reto","cuidas tu actitud","eres constante"],
+B7=["recoges los frutos","estarás más cerca","serás más fuerte","tendrás más confianza","sentirás orgullo","verás la diferencia","te lo agradecerás","todo será más fácil"],
+N9=["la constancia","la paciencia","el esfuerzo","la ilusión","la actitud","la disciplina","la alegría","la valentía","la humildad","la pasión","la calma","la generosidad"],R11=["éxito","libertad","orgullo","una gran tarde","un gran día","tranquilidad"];
+O4.forEach(o=>C4.forEach(c=>GEN2.push([`${o} ${c}`,""])));
+V5.forEach(v=>R5.forEach(r=>GEN2.push([`Quien ${v}, ${r}.`,""])));
+C6.forEach(c=>R6.forEach(r=>GEN2.push([`Si ${c}, ${r}.`,""])));
+A7.forEach(a=>B7.forEach(b=>GEN2.push([`Hoy ${a} y mañana ${b}.`,""])));
+for(let i=0;i<N9.length;i++)for(let j=i+1;j<N9.length;j++){const a=N9[i],b=N9[j];
+ GEN2.push([`Con ${a} y ${b} se llega a cualquier meta.`,""],[cap(`${a} y ${b}: la mejor fórmula para un gran día.`),""],[cap(`${b} y ${a} hacen grande hasta el día más corriente.`),""],[`${cap(a)} + ${b} = ${R11[(i+j)%6]}.`,""])}
+const DB={cel:Q.filter(a=>a[1]).concat(P_(CEL),P_(CEL2),P_(CEL3),P_(CEL4),P_(CEL5),P_(CEL6)),mot:Q.filter(a=>!a[1]).concat(P_(MOT),P_(MOT2),P_(MOT3),P_(MOT4),GEN,GEN2),chi:P_(CHI).concat(P_(CHI2),P_(CHI3).concat(P_(CHI4)).map(a=>[a[0],"Proverbio chino"]),P_(CHI5).concat(P_(CHI6)).map(a=>[a[0],"Sabiduría oriental"]))};
+/* Elimina frases repetidas dentro de cada categoría */
+const dd=a=>{const m=new Set;return a.filter(x=>!m.has(x[0])&&m.add(x[0]))};DB.cel=dd(DB.cel);DB.mot=dd(DB.mot);DB.chi=dd(DB.chi);
+const GS_=new Set([...GEN,...GEN2]); /* frases de fórmula: salen menos a menudo para que no se note la repetición */
+DB.all=[].concat(DB.cel,DB.mot,DB.chi);
+const CAT=[["all","✨ Todas"],["cel","🏛️ Célebres"],["mot","💪 Motivación"],["chi","🏮 Proverbios chinos"]];
+let ck="all",cur,qiv;
+try{const s=localStorage.getItem("qcat");if(DB[s])ck=s}catch(e){}
+cur=DB[ck];
+const cw=$("chips");
+function mark(){[...cw.children].forEach(b=>b.classList.toggle("on",b.dataset.k===ck))}
+/* Al elegir categoría: nuevo "saco" aleatorio, frase inmediata y se reinicia el temporizador de 30 s */
+CAT.forEach(([k,l])=>{const b=document.createElement("button");b.textContent=`${l} · ${DB[k].length}`;b.dataset.k=k;
+ b.onclick=()=>{ck=k;cur=DB[k];bag=[];try{localStorage.setItem("qcat",k)}catch(e){}mark();clearInterval(qiv);showQ();qiv=setInterval(showQ,30000)};cw.appendChild(b)});
+mark();
+/* ===== TEMA CLARO / OSCURO (manual, se recuerda; por defecto el del sistema) ===== */
+let th=null;try{th=localStorage.getItem("theme")}catch(e){}
+if(th!=="dark"&&th!=="light")th=matchMedia("(prefers-color-scheme:light)").matches?"light":"dark";
+function theme(){document.documentElement.dataset.theme=th;$("thm").textContent=th==="dark"?"☀️ Claro":"🌙 Oscuro"}
+$("thm").onclick=()=>{th=th==="dark"?"light":"dark";theme();try{localStorage.setItem("theme",th)}catch(e){}};theme();
+/* ===== AVISOS CLAVE: faltan 30 / 20 / 10 / 5 minutos (efectos en el reloj central) ===== */
+const MS={1800:["🚀","¡Faltan 30 minutos!",["Última media hora: ¡ya se huele la libertad!","¡Media hora y la tarde será tuya! Lo estás bordando.","¡30 minutos! Tú sigue así, que vas genial."]],
+1200:["⚡","¡Quedan 20 minutos!",["¡Recta final, vas como un campeón!","¡20 minutos! Tu esfuerzo de hoy está dando frutos.","¡Ya casi! Cada minuto te acerca a tu merecido descanso."]],
+600:["🔥","¡Solo 10 minutos!",["¡Diez minutos y a disfrutar! ¡Qué gran jornada!","¡Último empujón! Lo has hecho increíble.","¡10 minutos! Respira, sonríe y remata el día."]],
+300:["🏁","¡5 minutos para la libertad!",["¡La meta está ahí mismo! ¡Orgullo total!","¡5 minutos! Ve recogiendo, que lo has conseguido.","¡Cinco minutos! Hoy lo has dado todo, ¡enhorabuena!"]]};
+let msT,rmT;
+/* Detecta el cruce de cada umbral (solo si se cruza con la app abierta) */
+function mile(a,b){if(a===null)return;for(const k in MS){const t=k*1000;if(a>t&&b<=t&&b>t-90000)alarm(MS[k],k)}}
+function burstEm(em){const q=$("ring").getBoundingClientRect(),cx=q.left+q.width/2,cy=q.top+q.height/2,L=[em,"✨","⭐"];
+ for(let i=0;i<14;i++){const e=document.createElement("span"),a=i/14*6.283,d=130+Math.random()*130;e.className="bu";e.textContent=L[i%3];e.style.cssText=`left:${cx}px;top:${cy}px;--dx:${Math.cos(a)*d}px;--dy:${Math.sin(a)*d}px`;e.onanimationend=()=>e.remove();document.body.appendChild(e)}}
+function alarm(m,k){
+ const e=$("ms"),r=$("ring");$("mi").textContent=m[0];$("mt").textContent=m[1];$("mm").textContent=m[2][Math.random()*3|0];
+ e.classList.add("show");clearTimeout(msT);msT=setTimeout(()=>e.classList.remove("show"),9000);   /* cartel con mensaje positivo */
+ r.classList.remove("mile");void r.offsetWidth;r.classList.add("mile");clearTimeout(rmT);rmT=setTimeout(()=>r.classList.remove("mile"),2800); /* latido + ondas */
+ burstEm(m[0]);
+ if(ok()){const n=[3,4,5,6][[1800,1200,600,300].indexOf(+k)];[0,4,7,12,16,19].slice(0,n).forEach((st,i)=>tone(523*2**(st/12),ac.currentTime+i*.11,.25,i%2?"triangle":"square",.12))}
+ try{navigator.vibrate&&navigator.vibrate([120,60,120])}catch(x){}}
+/* ===== CELEBRACIÓN: datos y estado ===== */
+const SUB=["✅ Misión completada","✅ Has derrotado al lunes","✅ Jornada superada con éxito","✅ El almacén queda atrás","✅ Hora de disfrutar la tarde","✅ Ya puedes escapar","✅ Objetivo cumplido"],
+PH=["🏆 Otro día conquistado","🚀 Directo hacia la libertad","🍻 Te has ganado el descanso","☀️ Empieza tu tiempo","😎 Trabajo terminado","🎯 Objetivo alcanzado"],
+EM=["🍺","🎉","🏆","🚀","😎","🥳","🎈","⭐","🍕","🕺"];
+let cel=false,prev=null,ac,mg,nb,lb=0,pend=false,snd=true,pi=0,W,H,D=1,S=1,raf,last,t0,nextL=0,P=[],R=[],K=[],T=[];
+try{snd=localStorage.getItem("snd")!=="0"}catch(e){}
+const fc=$("fx").getContext("2d"),cc=$("cf").getContext("2d");
+/* Dispara la celebración solo si el cero se cruza con la app abierta */
+function watch(r){if(prev!==null&&prev>0&&r<=0&&r>-90000)celebrate();mile(prev,r);prev=r}
+/* ===== AUDIO (WebAudio sintetizado; se desbloquea con el primer gesto del usuario) ===== */
+function bus(){if(!ac)return;try{mg&&mg.disconnect()}catch(e){}mg=ac.createGain();mg.gain.value=snd?.5:0;mg.connect(ac.destination)}
+function lab(){$("snd").textContent=!snd?"🔇 Sonido OFF":pend?"🔊 Toca para oír":"🔊 Sonido ON"}
+function unlock(){try{if(!ac){ac=new(window.AudioContext||window.webkitAudioContext)();bus()}if(ac.state!=="running")ac.resume().then(()=>{if(pend&&cel){pend=false;fanfare()}lab()})}catch(e){}}
+["pointerdown","keydown","touchend"].forEach(v=>addEventListener(v,unlock,{passive:true}));
+const ok=()=>snd&&ac&&ac.state==="running";
+function tone(f,t,d,ty,v){const o=ac.createOscillator(),g=ac.createGain();o.type=ty;o.frequency.value=f;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v,t+.015);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(g);g.connect(mg);o.start(t);o.stop(t+d+.05)}
+function kick(t){const o=ac.createOscillator(),g=ac.createGain();o.frequency.setValueAtTime(160,t);o.frequency.exponentialRampToValueAtTime(40,t+.25);g.gain.setValueAtTime(.7,t);g.gain.exponentialRampToValueAtTime(.001,t+.3);o.connect(g);g.connect(mg);o.start(t);o.stop(t+.35)}
+function boom(v){if(!ok())return;if(!nb){nb=ac.createBuffer(1,ac.sampleRate*.6,ac.sampleRate);const d=nb.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*(1-i/d.length)}const s=ac.createBufferSource(),f=ac.createBiquadFilter(),g=ac.createGain();s.buffer=nb;f.type="lowpass";f.frequency.value=600+Math.random()*900;g.gain.value=v;s.connect(f);f.connect(g);g.connect(mg);s.start()}
+/* Fanfarria estilo "victoria de videojuego": 4 notas rápidas + remate + acorde + destellos */
+function fanfare(){if(!ok())return;const t=ac.currentTime+.05;
+ [[523,0,.11],[523,.13,.11],[523,.26,.11],[523,.39,.3],[415,.72,.3],[466,1.03,.3],[523,1.34,.28],[466,1.64,.1],[523,1.8,1.3]].forEach(([f,s,d])=>{tone(f,t+s,d,"square",.15);tone(f/2,t+s,d,"triangle",.2)});
+ [523,659,784,1047].forEach(f=>tone(f,t+1.8,1.9,"sawtooth",.06));
+ kick(t);kick(t+.65);kick(t+1.8);
+ for(let i=0;i<10;i++)tone(1568+i*130,t+2.2+i*.07,.35,"sine",.07)}
+$("snd").onclick=()=>{snd=!snd;try{localStorage.setItem("snd",snd?1:0)}catch(e){}unlock();if(mg)mg.gain.value=snd?.5:0;lab();if(ok())tone(880,ac.currentTime,.12,"square",.1)};
+/* ===== FUEGOS ARTIFICIALES (canvas, estelas con fade) ===== */
+function size(){D=Math.min(devicePixelRatio||1,2);W=innerWidth;H=innerHeight;S=Math.max(.8,Math.min(W,H)/650);for(const c of[$("fx"),$("cf")]){c.width=W*D;c.height=H*D}fc.setTransform(D,0,0,D,0,0)}
+addEventListener("resize",()=>cel&&size());
+function launch(s){const px=s<0?W*(.04+Math.random()*.16):W*(.8+Math.random()*.16),tx=W*(.15+Math.random()*.7),ty=H*(.1+Math.random()*.4),d=.9+Math.random()*.5;R.push({x:px,y:H+8,vx:(tx-px)/d,vy:(ty-H-8)/d,ty,h:Math.random()*360})}
+function explode(px,py,h){
+ if(P.length>1700)return;const k=Math.random(),add=(a,sp,l,g,hh,d)=>P.push({x:px,y:py,vx:Math.cos(a)*sp*S,vy:Math.sin(a)*sp*S,l,m:l,h:hh,g,d,f:Math.random()<.3});
+ if(k<.4){for(let i=0;i<110;i++)add(Math.random()*6.283,40+Math.random()*230,1.3+Math.random()*.7,90,h+(i%3)*25,1.2)}
+ else if(k<.65){for(let i=0;i<64;i++)add(i/64*6.283,230,1.6,70,h,1.6)}
+ else if(k<.85){for(let i=0;i<90;i++)add(Math.random()*6.283,30+Math.random()*170,2.6+Math.random(),110,45,1.8)}
+ else{for(let i=0;i<70;i++){const a=i/70*6.283;P.push({x:px,y:py,vx:16*Math.sin(a)**3*13*S,vy:-(13*Math.cos(a)-5*Math.cos(2*a)-2*Math.cos(3*a)-Math.cos(4*a))*13*S,l:1.8,m:1.8,h:340,g:60,d:1.4,f:false})}}
+ const n=performance.now();if(n-lb>140){lb=n;boom(.1+Math.random()*.15)}}
+/* ===== CAÑONES DE CONFETI (4 esquinas) ===== */
+function cannon(cx,cy,ang){for(let i=0;i<45;i++){const a=ang+(Math.random()-.5)*.9,sp=(500+Math.random()*750)*S;K.push({x:cx,y:cy,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,r:Math.random()*6.28,vr:(Math.random()-.5)*14,ph:Math.random()*6.28,w:6+Math.random()*7,h:10+Math.random()*8,l:5+Math.random()*3,c:Math.random()<.2?"#ffd84d":`hsl(${Math.random()*360} 90% 60%)`})}}
+function burst(){const q=Math.PI/4;cannon(0,0,q);cannon(W,0,3*q);cannon(0,H,-q);cannon(W,H,-3*q);boom(.3)}
+/* ===== BUCLE PRINCIPAL (un solo rAF, con delta-time) ===== */
+function frame(ts){
+ raf=requestAnimationFrame(frame);const dt=Math.min((ts-(last||ts))/1000,.05);last=ts;const el=(ts-t0)/1000;
+ nextL-=dt;if(nextL<=0){launch(-1);if(el<20||Math.random()<.5)launch(1);nextL=el<20?.3+Math.random()*.4:1.6+Math.random()*1.2} /* intenso 20 s, luego suave */
+ fc.globalCompositeOperation="destination-out";fc.fillStyle="rgba(0,0,0,.22)";fc.fillRect(0,0,W,H);fc.globalCompositeOperation="lighter";
+ for(let i=R.length-1;i>=0;i--){const r=R[i];r.x+=r.vx*dt;r.y+=r.vy*dt;P.push({x:r.x,y:r.y,vx:(Math.random()-.5)*30,vy:20+Math.random()*30,l:.45,m:.45,h:40,g:0,d:2,f:false});fc.fillStyle="#fff";fc.fillRect(r.x-2,r.y-2,4,4);if(r.y<=r.ty){explode(r.x,r.y,r.h);R[i]=R[R.length-1];R.pop()}}
+ if(P.length<1700&&Math.random()<.6)P.push({x:Math.random()*W,y:Math.random()*H,vx:0,vy:-20,l:.9,m:.9,h:45,g:0,d:0,f:true}); /* polvo dorado */
+ for(let i=P.length-1;i>=0;i--){const p=P[i];p.l-=dt;if(p.l<=0){P[i]=P[P.length-1];P.pop();continue}
+  p.vy+=p.g*dt;p.vx-=p.vx*p.d*dt;p.vy-=p.vy*p.d*dt;p.x+=p.vx*dt;p.y+=p.vy*dt;
+  const a=p.l/p.m;if(p.f&&Math.random()<.35)continue;
+  fc.fillStyle=`hsla(${p.h},100%,${55+a*30}%,${a})`;const s=1.5+a*2;fc.fillRect(p.x,p.y,s,s)}
+ cc.setTransform(D,0,0,D,0,0);cc.clearRect(0,0,W,H);
+ for(let i=K.length-1;i>=0;i--){const k=K[i];k.l-=dt;if(k.l<=0||k.y>H+30){K[i]=K[K.length-1];K.pop();continue}
+  k.vy+=650*dt;k.vx-=k.vx*1.3*dt;k.vy-=k.vy*1.3*dt;k.x+=k.vx*dt;k.y+=k.vy*dt;k.r+=k.vr*dt;k.ph+=9*dt;
+  const c=Math.cos(k.r),s=Math.sin(k.r);cc.setTransform(D*c,D*s,-D*s,D*c,D*k.x,D*k.y);cc.globalAlpha=Math.min(1,k.l);cc.fillStyle=k.c;cc.fillRect(-k.w/2,-k.h/2,k.w,k.h*Math.cos(k.ph))}
+ cc.globalAlpha=1}
+/* ===== EXTRAS DIVERTIDOS ===== */
+function nextPh(){const e=$("ph");e.classList.remove("pop");void e.offsetWidth;e.textContent=PH[pi++%PH.length];e.classList.add("pop")}
+function em(){if(document.querySelectorAll(".em").length>30)return;const e=document.createElement("span");e.className="em";e.textContent=EM[Math.random()*EM.length|0];e.style.cssText=`left:${Math.random()*100}%;font-size:${24+Math.random()*34}px;animation-duration:${5+Math.random()*4}s`;e.onanimationend=()=>e.remove();$("cel").appendChild(e)}
+/* ===== SECUENCIA CINEMATOGRÁFICA ===== */
+function celebrate(){
+ if(cel)return;cel=true;const at=(f,ms)=>T.push(setTimeout(f,ms)),B=document.body;bus();
+ $("veil").classList.add("on");                                   /* 1) oscurece 300 ms */
+ at(()=>$("ring").classList.add("zoom"),300);                     /* 2) zoom dramático del contador */
+ at(()=>$("fl").classList.add("go"),900);                         /* 3) flash luminoso */
+ at(()=>{                                                          /* 4) revelado: todo empieza */
+  $("veil").classList.remove("on");B.classList.add("cel");$("cel").classList.add("on");
+  $("sub").textContent=SUB[Math.random()*SUB.length|0];pi=0;nextPh();
+  size();t0=performance.now();last=0;nextL=0;raf=requestAnimationFrame(frame);
+  fanfare();pend=snd&&!ok();lab();
+  T.push(setInterval(nextPh,3200),setInterval(em,500));
+  for(let i=0;i<8;i++)at(()=>launch(i%2?1:-1),i*140);
+  [0,1800,3800,6500,9500].forEach(ms=>at(burst,ms));
+  at(()=>$("ach").classList.add("show"),1500);at(()=>$("ach").classList.remove("show"),6500)},1000)}
+/* Reinicio: cancela timers y rAF, vacía partículas y elimina nodos (sin fugas) */
+function reset(){if(!cel)return;cel=false;T.forEach(clearTimeout);T=[];cancelAnimationFrame(raf);P=[];R=[];K=[];pend=false;lab();
+ fc.clearRect(0,0,W,H);cc.setTransform(D,0,0,D,0,0);cc.clearRect(0,0,W,H);
+ try{mg&&mg.disconnect()}catch(e){}bus();
+ ["veil","fl","ach","cel"].forEach(i=>$(i).classList.remove("on","go","show"));
+ $("ring").classList.remove("zoom");document.body.classList.remove("cel");document.querySelectorAll(".em").forEach(e=>e.remove())}
+$("rst").onclick=reset;$("demo").onclick=()=>{unlock();celebrate()};lab();
+tick();showQ();setInterval(tick,250);qiv=setInterval(showQ,30000);
+</script></body></html>
